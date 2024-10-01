@@ -11,7 +11,7 @@ type menuItem struct {
 	Price int
 }
 
-func newMenuItem(m model.MenuItem) menuItem {
+func menuItemFromModel(m model.MenuItem) menuItem {
 	return menuItem{
 		ID:    m.ID,
 		Name:  m.Name,

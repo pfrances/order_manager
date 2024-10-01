@@ -1,0 +1,26 @@
+package usecases
+
+import (
+	"order_manager/internal/id"
+	"order_manager/internal/model"
+	"order_manager/internal/repositories"
+)
+
+type StartPreparation struct {
+	KitchenRepository repositories.KitchenRepository
+}
+
+func NewStartPreparation(kitchenRepository repositories.KitchenRepository) *StartPreparation {
+	return &StartPreparation{KitchenRepository: kitchenRepository}
+}
+
+func (s *StartPreparation) Execute(orderId id.ID) error {
+	return s.KitchenRepository.UpdatePreparation(orderId, func(preparation *model.Preparation) error {
+		if preparation.Status != model.PreparationStatusPending {
+			return model.ErrPreparationNotPending
+		}
+
+		preparation.Status = model.PreparationStatusInProgress
+		return nil
+	})
+}

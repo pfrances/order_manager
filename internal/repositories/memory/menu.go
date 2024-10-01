@@ -11,13 +11,15 @@ type MenuRepository struct {
 }
 
 func NewMenuRepository() *MenuRepository {
-	return &MenuRepository{}
+	return &MenuRepository{
+		menu: make(map[id.ID]menuItem),
+	}
 }
 
 /* Menu */
 
-func (m *MenuRepository) CreateMenu(menu *model.MenuItem) error {
-	m.menu[menu.ID] = newMenuItem(*menu)
+func (m *MenuRepository) CreateMenu(menu model.MenuItem) error {
+	m.menu[menu.ID] = menuItemFromModel(menu)
 	return nil
 }
 
@@ -41,7 +43,7 @@ func (m *MenuRepository) UpdateMenuItem(id id.ID, fn func(menu *model.MenuItem) 
 		return err
 	}
 
-	m.menu[id] = newMenuItem(item)
+	m.menu[id] = menuItemFromModel(item)
 	return nil
 }
 
@@ -56,7 +58,7 @@ func (m *MenuRepository) RemoveItem(id id.ID) error {
 
 /* MenuCategory */
 
-func (m *MenuRepository) CreateMenuCategory(category *model.MenuCategory) error {
+func (m *MenuRepository) CreateMenuCategory(category model.MenuCategory) error {
 	// TODO
 	return nil
 }

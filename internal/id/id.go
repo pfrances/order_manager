@@ -16,3 +16,11 @@ func NewID() ID {
 
 	return newID
 }
+
+func NilID() ID {
+	return ID(-1)
+}
+
+func (id ID) IsNil() bool {
+	return id == NilID()
+}

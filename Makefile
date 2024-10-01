@@ -1,3 +1,5 @@
+NAME := $(shell basename $(CURDIR))
+
 fmt:
 	go fmt ./...
 .PHONY: fmt
@@ -18,6 +20,14 @@ run:
 	go run .
 .PHONY: run
 
+clean:
+	rm -f $(NAME) *.out *.html
+
 test:
 	go test ./...
 .PHONY: test
+
+cover:
+	go test ./... -coverprofile=cover.out
+	go tool cover -html=cover.out
+.PHONY: cover
