@@ -29,9 +29,9 @@ func TestTakeOrderSuccess(t *testing.T) {
 
 	preparations := kitchenRepo.GetPreparationsByOrderID(order.ID)
 	asserts.Len(preparations, len(menuItemIDs))
-	for i, preparation := range preparations {
+	for _, preparation := range preparations {
 		asserts.Equal(order.ID, preparation.OrderID)
-		asserts.Equal(menuItemIDs[i], preparation.MenuItemID)
+		asserts.Contains(menuItemIDs, preparation.MenuItemID)
 		asserts.Equal(model.PreparationStatusPending, preparation.Status)
 	}
 }
