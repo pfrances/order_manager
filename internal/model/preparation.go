@@ -6,18 +6,20 @@ import (
 )
 
 var (
-	ErrPreparationNotFound       = fmt.Errorf("preparation not found")
-	ErrPreparationNotPending     = fmt.Errorf("preparation is not pending")
-	ErrPreparationNotInProgress  = fmt.Errorf("preparation is not in progress")
-	ErrPreparationAlreadyAborted = fmt.Errorf("preparation is already aborted")
+	ErrPreparationNotFound      = fmt.Errorf("preparation not found")
+	ErrPreparationNotPending    = fmt.Errorf("preparation is not pending")
+	ErrPreparationNotInProgress = fmt.Errorf("preparation is not in progress")
+	ErrPreparationNotReady      = fmt.Errorf("preparation is not ready")
 )
 
 type PreparationStatus string
 
 const (
+	PreparationStatusInvalid    PreparationStatus = "invalid"
 	PreparationStatusPending    PreparationStatus = "pending"
 	PreparationStatusInProgress PreparationStatus = "in progress"
 	PreparationStatusReady      PreparationStatus = "ready"
+	PreparationStatusServed     PreparationStatus = "served"
 	PreparationStatusAborted    PreparationStatus = "aborted"
 )
 
