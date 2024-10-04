@@ -7,38 +7,33 @@ import (
 	"order_manager/internal/usecases"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestStartPreparation(t *testing.T) {
-	testCases := []struct {
-		name          string
-		status        model.PreparationStatus
-		expectedError error
-	}{
-		{
-			name:          "pending",
-			status:        model.PreparationStatusPending,
-			expectedError: nil,
-		},
-		{
-			name:          "in progress",
-			status:        model.PreparationStatusInProgress,
-			expectedError: model.ErrPreparationNotPending,
-		},
-		{
-			name:          "ready",
-			status:        model.PreparationStatusReady,
-			expectedError: model.ErrPreparationNotPending,
-		},
-		{
-			name:          "aborted",
-			status:        model.PreparationStatusAborted,
-			expectedError: model.ErrPreparationNotPending,
-		},
+func TestStartPreparationSuccess(t *testing.T) {
+	repo := memory.NewKitchenRepository()
+	startPreparation := usecases.NewStartPreparation(repo)
+	preparation := model.Preparation{
+		ID:      id.NewID(),
+		OrderID: id.NewID(),
+		Status:  model.PreparationStatusPending,
 	}
+	err := repo.CreatePreparation(preparation)
+	require.NoError(t, err)
 
-	asserts := assert.New(t)
+	err = startPreparation.Execute(preparation.ID)
+
+	require.NoError(t, err)
+	updatedPreparation := repo.GetPreparation(preparation.ID)
+	require.Equal(t, model.PreparationStatusInProgress, updatedPreparation.Status)
+}
+
+func TestStartPreparationFailedWithWrongStatus(t *testing.T) {
+	testCases := []model.PreparationStatus{
+		model.PreparationStatusInProgress,
+		model.PreparationStatusReady,
+		model.PreparationStatusAborted,
+	}
 	repo := memory.NewKitchenRepository()
 	startPreparation := usecases.NewStartPreparation(repo)
 
@@ -46,12 +41,13 @@ func TestStartPreparation(t *testing.T) {
 		preparation := model.Preparation{
 			ID:      id.NewID(),
 			OrderID: id.NewID(),
-			Status:  tc.status,
+			Status:  tc,
 		}
-		repo.CreatePreparation(preparation)
+		err := repo.CreatePreparation(preparation)
+		require.NoError(t, err)
 
-		err := startPreparation.Execute(preparation.ID)
+		err = startPreparation.Execute(preparation.ID)
 
-		asserts.Equal(tc.expectedError, err, tc.name)
+		require.ErrorIs(t, err, model.ErrPreparationWrongStatus)
 	}
 }

@@ -27,8 +27,24 @@ func (m menuItem) toModel() model.MenuItem {
 	}
 }
 
-type MenuCategory struct {
+type menuCategory struct {
 	ID          id.ID
 	Name        string
 	MenuItemIds []id.ID
+}
+
+func menuCategoryFromModel(m model.MenuCategory) menuCategory {
+	return menuCategory{
+		ID:          m.ID,
+		Name:        m.Name,
+		MenuItemIds: m.MenuItemIds,
+	}
+}
+
+func (m menuCategory) toModel() model.MenuCategory {
+	return model.MenuCategory{
+		ID:          m.ID,
+		Name:        m.Name,
+		MenuItemIds: m.MenuItemIds,
+	}
 }

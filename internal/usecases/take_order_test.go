@@ -8,30 +8,27 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestTakeOrderSuccess(t *testing.T) {
-	asserts := assert.New(t)
 	orderRepo := memory.NewOrderRepository()
 	kitchenRepo := memory.NewKitchenRepository()
 	takeOrder := usecases.NewTakeOrder(orderRepo, kitchenRepo)
-
 	tableID := id.NewID()
 	menuItemIDs := []id.ID{id.NewID(), id.NewID()}
 
 	orderID, err := takeOrder.Execute(tableID, menuItemIDs)
-	asserts.NoError(err)
-	asserts.NotEqual(id.NilID(), orderID)
 
+	require.NoError(t, err)
 	order := orderRepo.GetOrder(orderID)
-	asserts.NotNil(order)
-	asserts.Equal(tableID, order.TableID)
-
+	assert.NotNil(t, order)
+	assert.Equal(t, tableID, order.TableID)
 	preparations := kitchenRepo.GetPreparationsByOrderID(order.ID)
-	asserts.Len(preparations, len(menuItemIDs))
+	assert.Len(t, preparations, len(menuItemIDs))
 	for _, preparation := range preparations {
-		asserts.Equal(order.ID, preparation.OrderID)
-		asserts.Contains(menuItemIDs, preparation.MenuItemID)
-		asserts.Equal(model.PreparationStatusPending, preparation.Status)
+		assert.Contains(t, menuItemIDs, preparation.MenuItemID)
+		assert.Equal(t, order.ID, preparation.OrderID)
+		assert.Equal(t, model.PreparationStatusPending, preparation.Status)
 	}
 }

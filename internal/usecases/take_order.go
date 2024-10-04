@@ -1,6 +1,7 @@
 package usecases
 
 import (
+	"fmt"
 	"order_manager/internal/id"
 	"order_manager/internal/model"
 	"order_manager/internal/repositories"
@@ -25,7 +26,7 @@ func (t *TakeOrder) Execute(tableId id.ID, menuItemIds []id.ID) (id.ID, error) {
 
 	err := t.orderRepository.CreateOrder(newOrder)
 	if err != nil {
-		return id.NilID(), err
+		return id.NilID(), fmt.Errorf("failed to create order %v: %w", newOrder, err)
 	}
 
 	preparations := make([]model.Preparation, 0, len(menuItemIds))
@@ -40,7 +41,7 @@ func (t *TakeOrder) Execute(tableId id.ID, menuItemIds []id.ID) (id.ID, error) {
 
 	err = t.kitchenRepository.CreatePreparations(preparations)
 	if err != nil {
-		return id.NilID(), err
+		return id.NilID(), fmt.Errorf("failed to create preparations %v: %w", preparations, err)
 	}
 
 	t.orderRepository.UpdateOrder(newOrder.ID, func(order *model.Order) error {

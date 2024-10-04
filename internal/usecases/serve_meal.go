@@ -1,6 +1,7 @@
 package usecases
 
 import (
+	"fmt"
 	"order_manager/internal/id"
 	"order_manager/internal/model"
 	"order_manager/internal/repositories"
@@ -18,7 +19,8 @@ func NewServeMeal(orderRepository repositories.OrderRepository, kitchenRepositor
 func (s *ServeMeal) Execute(preparationID id.ID) error {
 	return s.kitchenRepository.UpdatePreparation(preparationID, func(preparation *model.Preparation) error {
 		if preparation.Status != model.PreparationStatusReady {
-			return model.ErrPreparationNotReady
+			return fmt.Errorf("serve meal failed. preparation with ID %s has status %s, but only %s is allowed: %w",
+				preparationID, preparation.Status, model.PreparationStatusReady, model.ErrPreparationWrongStatus)
 		}
 
 		preparation.Status = model.PreparationStatusServed

@@ -1,6 +1,7 @@
 package usecases
 
 import (
+	"fmt"
 	"order_manager/internal/id"
 	"order_manager/internal/model"
 	"order_manager/internal/repositories"
@@ -17,7 +18,8 @@ func NewFinishPreparation(kitchenRepo repositories.KitchenRepository) *FinishPre
 func (f *FinishPreparation) Execute(PreparationID id.ID) error {
 	return f.kitchenRepository.UpdatePreparation(PreparationID, func(preparation *model.Preparation) error {
 		if preparation.Status != model.PreparationStatusInProgress {
-			return model.ErrPreparationNotInProgress
+			return fmt.Errorf("finish preparation failed. preparation with ID %s has status %s, but only %s is allowed: %w",
+				PreparationID, preparation.Status, model.PreparationStatusInProgress, model.ErrPreparationWrongStatus)
 		}
 
 		preparation.Status = model.PreparationStatusReady

@@ -6,10 +6,8 @@ import (
 )
 
 var (
-	ErrPreparationNotFound      = fmt.Errorf("preparation not found")
-	ErrPreparationNotPending    = fmt.Errorf("preparation is not pending")
-	ErrPreparationNotInProgress = fmt.Errorf("preparation is not in progress")
-	ErrPreparationNotReady      = fmt.Errorf("preparation is not ready")
+	ErrPreparationNotFound    = fmt.Errorf("preparation not found")
+	ErrPreparationWrongStatus = fmt.Errorf("preparation has wrong status")
 )
 
 type PreparationStatus string

@@ -8,10 +8,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func orderWithPreparations(orderStatus model.OrderStatus, preparationsStatus []model.PreparationStatus) (model.Order, []model.Preparation) {
-
 	menuItemIds := make([]id.ID, len(preparationsStatus))
 	for i := range menuItemIds {
 		menuItemIds[i] = id.NewID()
@@ -37,7 +37,6 @@ func orderWithPreparations(orderStatus model.OrderStatus, preparationsStatus []m
 }
 
 func TestServeOrderSuccess(t *testing.T) {
-	asserts := assert.New(t)
 	kitchenRepo := memory.NewKitchenRepository()
 	orderRepo := memory.NewOrderRepository()
 	usecase := usecases.NewServeMeal(orderRepo, kitchenRepo)
@@ -48,17 +47,17 @@ func TestServeOrderSuccess(t *testing.T) {
 		expectedOrderStatus    model.OrderStatus
 	}{
 		{
-			name:                   "other preparations ready",
+			name:                   "other preparation ready",
 			otherPreparationStatus: model.PreparationStatusReady,
 			expectedOrderStatus:    model.OrderStatusTaken,
 		},
 		{
-			name:                   "other preparations served",
+			name:                   "other preparation served",
 			otherPreparationStatus: model.PreparationStatusServed,
 			expectedOrderStatus:    model.OrderStatusDone,
 		},
 		{
-			name:                   "other preparations aborted",
+			name:                   "other preparation aborted",
 			otherPreparationStatus: model.PreparationStatusAborted,
 			expectedOrderStatus:    model.OrderStatusDone,
 		},
@@ -68,67 +67,46 @@ func TestServeOrderSuccess(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			order, preparations := orderWithPreparations(model.OrderStatusTaken, []model.PreparationStatus{model.PreparationStatusReady, tt.otherPreparationStatus})
 			err := orderRepo.CreateOrder(order)
-			asserts.NoError(err)
+			require.NoError(t, err)
 			err = kitchenRepo.CreatePreparations(preparations)
-			asserts.NoError(err)
+			require.NoError(t, err)
 			preparationToServeID := preparations[0].ID
 
 			err = usecase.Execute(preparationToServeID)
-			asserts.NoError(err)
 
+			require.NoError(t, err)
 			updatedPreparation := kitchenRepo.GetPreparation(preparationToServeID)
-			asserts.Equal(model.PreparationStatusServed, updatedPreparation.Status)
-
+			assert.Equal(t, model.PreparationStatusServed, updatedPreparation.Status)
 			updatedOrder := orderRepo.GetOrder(order.ID)
-			asserts.Equal(tt.expectedOrderStatus, updatedOrder.Status)
+			assert.Equal(t, tt.expectedOrderStatus, updatedOrder.Status)
 		})
 	}
 }
 
 func TestServeOrderFailWhenWrongStatus(t *testing.T) {
-	asserts := assert.New(t)
 	kitchenRepo := memory.NewKitchenRepository()
 	orderRepo := memory.NewOrderRepository()
 	usecase := usecases.NewServeMeal(orderRepo, kitchenRepo)
 
-	tc := []struct {
-		name              string
-		preparationStatus model.PreparationStatus
-		expectedError     error
-	}{
-		{
-			name:              "preparation pending",
-			preparationStatus: model.PreparationStatusPending,
-			expectedError:     model.ErrPreparationNotReady,
-		},
-		{
-			name:              "preparation in progress",
-			preparationStatus: model.PreparationStatusInProgress,
-			expectedError:     model.ErrPreparationNotReady,
-		},
-		{
-			name:              "preparation already served",
-			preparationStatus: model.PreparationStatusServed,
-			expectedError:     model.ErrPreparationNotReady,
-		},
-		{
-			name:              "preparation aborted",
-			preparationStatus: model.PreparationStatusAborted,
-			expectedError:     model.ErrPreparationNotReady,
-		},
+	tc := []model.PreparationStatus{
+		model.PreparationStatusPending,
+		model.PreparationStatusInProgress,
+		model.PreparationStatusServed,
+		model.PreparationStatusAborted,
 	}
 
 	for _, tt := range tc {
-		t.Run(tt.name, func(t *testing.T) {
-			order, preparations := orderWithPreparations(model.OrderStatusTaken, []model.PreparationStatus{tt.preparationStatus})
+		t.Run(string(tt), func(t *testing.T) {
+			order, preparations := orderWithPreparations(model.OrderStatusTaken, []model.PreparationStatus{tt})
 			err := orderRepo.CreateOrder(order)
-			asserts.NoError(err)
+			require.NoError(t, err)
 			err = kitchenRepo.CreatePreparations(preparations)
-			asserts.NoError(err)
+			require.NoError(t, err)
 			preparationToServeID := preparations[0].ID
 
 			err = usecase.Execute(preparationToServeID)
-			asserts.Error(tt.expectedError, err)
+
+			require.ErrorIs(t, err, model.ErrPreparationWrongStatus)
 		})
 	}
 }

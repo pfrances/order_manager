@@ -1,6 +1,9 @@
 package id
 
-import "sync"
+import (
+	"strconv"
+	"sync"
+)
 
 type ID int
 
@@ -23,4 +26,8 @@ func NilID() ID {
 
 func (id ID) IsNil() bool {
 	return id == NilID()
+}
+
+func (id ID) String() string {
+	return strconv.Itoa(int(id))
 }

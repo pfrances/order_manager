@@ -7,18 +7,20 @@ import (
 )
 
 type MenuRepository struct {
-	menu map[id.ID]menuItem
+	menu     map[id.ID]menuItem
+	category map[id.ID]menuCategory
 }
 
 func NewMenuRepository() *MenuRepository {
 	return &MenuRepository{
-		menu: make(map[id.ID]menuItem),
+		menu:     make(map[id.ID]menuItem),
+		category: make(map[id.ID]menuCategory),
 	}
 }
 
 /* Menu */
 
-func (m *MenuRepository) CreateMenu(menu model.MenuItem) error {
+func (m *MenuRepository) CreateMenuItem(menu model.MenuItem) error {
 	m.menu[menu.ID] = menuItemFromModel(menu)
 	return nil
 }
@@ -59,26 +61,60 @@ func (m *MenuRepository) RemoveItem(id id.ID) error {
 /* MenuCategory */
 
 func (m *MenuRepository) CreateMenuCategory(category model.MenuCategory) error {
-	// TODO
+	if _, ok := m.category[category.ID]; ok {
+		return fmt.Errorf("category already exists")
+	}
+
+	m.category[category.ID] = menuCategoryFromModel(category)
 	return nil
 }
 
 func (m *MenuRepository) GetMenuCategory(id id.ID) *model.MenuCategory {
-	// TODO
+	for _, category := range m.category {
+		if category.ID == id {
+			modelCategory := category.toModel()
+			return &modelCategory
+		}
+	}
 	return nil
 }
 
 func (m *MenuRepository) RemoveCategory(id id.ID) error {
-	// TODO
+	if _, ok := m.category[id]; !ok {
+		return fmt.Errorf("category not found")
+	}
+
+	delete(m.category, id)
 	return nil
 }
 
 func (m *MenuRepository) UpdateMenuCategory(id id.ID, fn func(menu *model.MenuCategory) error) error {
-	// TODO
+	category := m.GetMenuCategory(id)
+	if category == nil {
+		return fmt.Errorf("category not found")
+	}
+
+	if err := fn(category); err != nil {
+		return err
+	}
+
+	m.category[id] = menuCategoryFromModel(*category)
 	return nil
 }
 
 func (m *MenuRepository) GetMenuItemsInCategory(categoryID id.ID) []model.MenuItem {
-	// TODO
-	return nil
+	category := m.GetMenuCategory(categoryID)
+	if category == nil {
+		return nil
+	}
+
+	var items []model.MenuItem
+	for _, itemID := range category.MenuItemIds {
+		item := m.GetMenuItem(itemID)
+		if item != nil {
+			items = append(items, *item)
+		}
+	}
+
+	return items
 }

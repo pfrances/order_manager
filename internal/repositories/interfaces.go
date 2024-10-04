@@ -34,7 +34,7 @@ type OrderRepository interface {
 // Menu
 
 type MenuRepository interface {
-	CreateMenu(menu model.MenuItem) error
+	CreateMenuItem(menu model.MenuItem) error
 	GetMenuItem(id id.ID) *model.MenuItem
 	UpdateMenuItem(id id.ID, fn func(menu *model.MenuItem) error) error
 	RemoveItem(id id.ID) error
