@@ -1,4 +1,4 @@
-package usecases
+package menu
 
 import (
 	"fmt"

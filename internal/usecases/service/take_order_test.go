@@ -1,10 +1,10 @@
-package usecases_test
+package service_test
 
 import (
 	"order_manager/internal/id"
 	"order_manager/internal/model"
 	"order_manager/internal/repositories/memory"
-	"order_manager/internal/usecases"
+	"order_manager/internal/usecases/service"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,7 +14,7 @@ import (
 func TestTakeOrderSuccess(t *testing.T) {
 	orderRepo := memory.NewOrderRepository()
 	kitchenRepo := memory.NewKitchenRepository()
-	takeOrder := usecases.NewTakeOrder(orderRepo, kitchenRepo)
+	takeOrder := service.NewTakeOrder(orderRepo, kitchenRepo)
 	tableID := id.NewID()
 	menuItemIDs := []id.ID{id.NewID(), id.NewID()}
 

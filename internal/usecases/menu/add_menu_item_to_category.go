@@ -1,4 +1,4 @@
-package usecases
+package menu
 
 import (
 	"order_manager/internal/id"

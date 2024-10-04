@@ -1,9 +1,9 @@
-package usecases_test
+package menu_test
 
 import (
 	"order_manager/internal/id"
 	"order_manager/internal/repositories/memory"
-	"order_manager/internal/usecases"
+	"order_manager/internal/usecases/menu"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,7 +12,7 @@ import (
 
 func TestCreateMenuCategoryWithNoMenuItem(t *testing.T) {
 	menuRepo := memory.NewMenuRepository()
-	usecase := usecases.NewCreateMenuCategory(menuRepo)
+	usecase := menu.NewCreateMenuCategory(menuRepo)
 
 	id, err := usecase.Execute("desserts", []id.ID{})
 	require.NoError(t, err)
@@ -24,7 +24,7 @@ func TestCreateMenuCategoryWithNoMenuItem(t *testing.T) {
 
 func TestCreateMenuCategoryWithMenuItems(t *testing.T) {
 	menuRepo := memory.NewMenuRepository()
-	usecase := usecases.NewCreateMenuCategory(menuRepo)
+	usecase := menu.NewCreateMenuCategory(menuRepo)
 
 	menuItemIDs := []id.ID{id.NewID(), id.NewID()}
 	name := "desserts"

@@ -1,10 +1,10 @@
-package usecases_test
+package menu_test
 
 import (
 	"order_manager/internal/id"
 	"order_manager/internal/model"
 	"order_manager/internal/repositories/memory"
-	"order_manager/internal/usecases"
+	"order_manager/internal/usecases/menu"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,7 +13,7 @@ import (
 
 func TestAddMenuItemToCategorySuccess(t *testing.T) {
 	menuRepo := memory.NewMenuRepository()
-	usecase := usecases.NewAddMenuItemToCategory(menuRepo)
+	usecase := menu.NewAddMenuItemToCategory(menuRepo)
 	category := model.MenuCategory{
 		ID:   id.NewID(),
 		Name: "desserts",

@@ -1,10 +1,10 @@
-package usecases_test
+package service_test
 
 import (
 	"order_manager/internal/id"
 	"order_manager/internal/model"
 	"order_manager/internal/repositories/memory"
-	"order_manager/internal/usecases"
+	"order_manager/internal/usecases/service"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -39,7 +39,7 @@ func orderWithPreparations(orderStatus model.OrderStatus, preparationsStatus []m
 func TestServeOrderSuccess(t *testing.T) {
 	kitchenRepo := memory.NewKitchenRepository()
 	orderRepo := memory.NewOrderRepository()
-	usecase := usecases.NewServeMeal(orderRepo, kitchenRepo)
+	usecase := service.NewServeMeal(orderRepo, kitchenRepo)
 
 	tc := []struct {
 		name                   string
@@ -86,7 +86,7 @@ func TestServeOrderSuccess(t *testing.T) {
 func TestServeOrderFailWhenWrongStatus(t *testing.T) {
 	kitchenRepo := memory.NewKitchenRepository()
 	orderRepo := memory.NewOrderRepository()
-	usecase := usecases.NewServeMeal(orderRepo, kitchenRepo)
+	usecase := service.NewServeMeal(orderRepo, kitchenRepo)
 
 	tc := []model.PreparationStatus{
 		model.PreparationStatusPending,
@@ -115,7 +115,7 @@ func TestServeOrderFailOrderNotFound(t *testing.T) {
 	asserts := assert.New(t)
 	kitchenRepo := memory.NewKitchenRepository()
 	orderRepo := memory.NewOrderRepository()
-	usecase := usecases.NewServeMeal(orderRepo, kitchenRepo)
+	usecase := service.NewServeMeal(orderRepo, kitchenRepo)
 
 	preparationToServeID := id.NewID()
 

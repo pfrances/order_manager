@@ -1,10 +1,10 @@
-package usecases_test
+package kitchen_test
 
 import (
 	"order_manager/internal/id"
 	"order_manager/internal/model"
 	"order_manager/internal/repositories/memory"
-	"order_manager/internal/usecases"
+	"order_manager/internal/usecases/kitchen"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -12,7 +12,7 @@ import (
 
 func TestStartPreparationSuccess(t *testing.T) {
 	repo := memory.NewKitchenRepository()
-	startPreparation := usecases.NewStartPreparation(repo)
+	startPreparation := kitchen.NewStartPreparation(repo)
 	preparation := model.Preparation{
 		ID:      id.NewID(),
 		OrderID: id.NewID(),
@@ -35,7 +35,7 @@ func TestStartPreparationFailedWithWrongStatus(t *testing.T) {
 		model.PreparationStatusAborted,
 	}
 	repo := memory.NewKitchenRepository()
-	startPreparation := usecases.NewStartPreparation(repo)
+	startPreparation := kitchen.NewStartPreparation(repo)
 
 	for _, tc := range testCases {
 		preparation := model.Preparation{

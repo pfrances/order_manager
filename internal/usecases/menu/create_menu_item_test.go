@@ -1,8 +1,8 @@
-package usecases_test
+package menu_test
 
 import (
 	"order_manager/internal/repositories/memory"
-	"order_manager/internal/usecases"
+	"order_manager/internal/usecases/menu"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,7 +11,7 @@ import (
 
 func TestCreateMenuItemSuccess(t *testing.T) {
 	menuRepo := memory.NewMenuRepository()
-	usecase := usecases.NewCreateMenuItem(menuRepo)
+	usecase := menu.NewCreateMenuItem(menuRepo)
 
 	id, err := usecase.Execute("Cheeseburger", 10)
 	require.NoError(t, err)
@@ -23,16 +23,16 @@ func TestCreateMenuItemSuccess(t *testing.T) {
 
 func TestCreateMenuItemWithEmptyName(t *testing.T) {
 	menuRepo := memory.NewMenuRepository()
-	usecase := usecases.NewCreateMenuItem(menuRepo)
+	usecase := menu.NewCreateMenuItem(menuRepo)
 
 	_, err := usecase.Execute("", 10)
-	require.ErrorIs(t, err, usecases.ErrMenuItemNameRequired)
+	require.ErrorIs(t, err, menu.ErrMenuItemNameRequired)
 }
 
 func TestCreateMenuItemWithNegativePrice(t *testing.T) {
 	menuRepo := memory.NewMenuRepository()
-	usecase := usecases.NewCreateMenuItem(menuRepo)
+	usecase := menu.NewCreateMenuItem(menuRepo)
 
 	_, err := usecase.Execute("Cheeseburger", -10)
-	require.ErrorIs(t, err, usecases.ErrMenuItemPriceInvalid)
+	require.ErrorIs(t, err, menu.ErrMenuItemPriceInvalid)
 }
