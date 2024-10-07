@@ -12,11 +12,11 @@ var (
 )
 
 type CreateMenuCategory struct {
-	menuRepository repositories.MenuRepository
+	menuCategoryRepository repositories.MenuCategoryRepository
 }
 
-func NewCreateMenuCategory(menuRepository repositories.MenuRepository) *CreateMenuCategory {
-	return &CreateMenuCategory{menuRepository: menuRepository}
+func NewCreateMenuCategory(menuCategoryRepository repositories.MenuCategoryRepository) *CreateMenuCategory {
+	return &CreateMenuCategory{menuCategoryRepository: menuCategoryRepository}
 }
 
 func (c *CreateMenuCategory) Execute(name string, menuItemID []id.ID) (id.ID, error) {
@@ -30,5 +30,5 @@ func (c *CreateMenuCategory) Execute(name string, menuItemID []id.ID) (id.ID, er
 		MenuItemIds: menuItemID,
 	}
 
-	return category.ID, c.menuRepository.CreateMenuCategory(category)
+	return category.ID, c.menuCategoryRepository.CreateMenuCategory(category)
 }

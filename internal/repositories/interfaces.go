@@ -1,17 +1,22 @@
 package repositories
 
 import (
+	"context"
 	"fmt"
 	"order_manager/internal/id"
 	"order_manager/internal/model"
 )
 
-// Kitchen
-
 var (
-	ErrPreparationNotFound      = fmt.Errorf("preparation not found")
-	ErrPreparationAlreadyExists = fmt.Errorf("preparation already exists")
+	ErrNotFound      = fmt.Errorf("not found")
+	ErrAlreadyExists = fmt.Errorf("already exists")
 )
+
+type TransactionManager interface {
+	Begin(ctx context.Context) (context.Context, error)
+	Commit(ctx context.Context) error
+	Rollback(ctx context.Context) error
+}
 
 type KitchenRepository interface {
 	CreatePreparation(preparation model.Preparation) error
@@ -38,9 +43,20 @@ type MenuRepository interface {
 	GetMenuItem(id id.ID) *model.MenuItem
 	UpdateMenuItem(id id.ID, fn func(menu *model.MenuItem) error) error
 	RemoveItem(id id.ID) error
+}
 
+type MenuCategoryRepository interface {
 	CreateMenuCategory(category model.MenuCategory) error
 	GetMenuCategory(id id.ID) *model.MenuCategory
 	UpdateMenuCategory(id id.ID, fn func(menu *model.MenuCategory) error) error
 	RemoveCategory(id id.ID) error
+}
+
+// Table
+
+type TableRepository interface {
+	CreateTable(table model.Table) error
+	GetTable(id id.ID) *model.Table
+	UpdateTable(id id.ID, fn func(table *model.Table) error) error
+	RemoveTable(id id.ID) error
 }

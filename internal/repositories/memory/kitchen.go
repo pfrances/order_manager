@@ -20,10 +20,10 @@ func NewKitchenRepository() *KitchenRepository {
 
 func (k *KitchenRepository) CreatePreparation(preparation model.Preparation) error {
 	if _, ok := k.preparations[preparation.ID]; ok {
-		return repositories.ErrPreparationAlreadyExists
+		return repositories.ErrAlreadyExists
 	}
 
-	k.preparations[preparation.ID] = fromModel(preparation)
+	k.preparations[preparation.ID] = preparationFromModel(preparation)
 	return nil
 }
 
@@ -61,20 +61,20 @@ func (k *KitchenRepository) GetPreparationsByOrderID(orderID id.ID) []model.Prep
 func (k *KitchenRepository) UpdatePreparation(id id.ID, fn func(preparation *model.Preparation) error) error {
 	preparation := k.GetPreparation(id)
 	if preparation == nil {
-		return repositories.ErrPreparationNotFound
+		return repositories.ErrNotFound
 	}
 
 	if err := fn(preparation); err != nil {
 		return err
 	}
 
-	k.preparations[id] = fromModel(*preparation)
+	k.preparations[id] = preparationFromModel(*preparation)
 	return nil
 }
 
 func (k *KitchenRepository) RemovePreparation(id id.ID) error {
 	if _, ok := k.preparations[id]; !ok {
-		return repositories.ErrPreparationNotFound
+		return repositories.ErrNotFound
 	}
 
 	delete(k.preparations, id)

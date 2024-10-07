@@ -7,15 +7,15 @@ import (
 )
 
 type AddMenuItemToCategory struct {
-	menuRepository repositories.MenuRepository
+	menuCategoryRepository repositories.MenuCategoryRepository
 }
 
-func NewAddMenuItemToCategory(menuRepository repositories.MenuRepository) *AddMenuItemToCategory {
-	return &AddMenuItemToCategory{menuRepository: menuRepository}
+func NewAddMenuItemToCategory(menuCategoryRepository repositories.MenuCategoryRepository) *AddMenuItemToCategory {
+	return &AddMenuItemToCategory{menuCategoryRepository: menuCategoryRepository}
 }
 
 func (a *AddMenuItemToCategory) Execute(categoryID id.ID, menuItemID id.ID) error {
-	return a.menuRepository.UpdateMenuCategory(categoryID, func(category *model.MenuCategory) error {
+	return a.menuCategoryRepository.UpdateMenuCategory(categoryID, func(category *model.MenuCategory) error {
 		category.MenuItemIds = append(category.MenuItemIds, menuItemID)
 		return nil
 	})

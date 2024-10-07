@@ -1,9 +1,9 @@
 package memory
 
 import (
-	"fmt"
 	"order_manager/internal/id"
 	"order_manager/internal/model"
+	"order_manager/internal/repositories"
 )
 
 type MenuRepository struct {
@@ -21,13 +21,17 @@ func NewMenuRepository() *MenuRepository {
 /* Menu */
 
 func (m *MenuRepository) CreateMenuItem(menu model.MenuItem) error {
+	if _, ok := m.menu[menu.ID]; ok {
+		return repositories.ErrAlreadyExists
+	}
+
 	m.menu[menu.ID] = menuItemFromModel(menu)
 	return nil
 }
 
 func (m *MenuRepository) GetMenuItem(id id.ID) *model.MenuItem {
 	for _, item := range m.menu {
-		if item.ID == id {
+		if item.id == id {
 			modelItem := item.toModel()
 			return &modelItem
 		}
@@ -37,7 +41,7 @@ func (m *MenuRepository) GetMenuItem(id id.ID) *model.MenuItem {
 
 func (m *MenuRepository) UpdateMenuItem(id id.ID, fn func(menu *model.MenuItem) error) error {
 	if _, ok := m.menu[id]; !ok {
-		return fmt.Errorf("item not found")
+		return repositories.ErrNotFound
 	}
 
 	item := m.menu[id].toModel()
@@ -51,7 +55,7 @@ func (m *MenuRepository) UpdateMenuItem(id id.ID, fn func(menu *model.MenuItem) 
 
 func (m *MenuRepository) RemoveItem(id id.ID) error {
 	if _, ok := m.menu[id]; !ok {
-		return fmt.Errorf("item not found")
+		return repositories.ErrNotFound
 	}
 
 	delete(m.menu, id)
@@ -62,7 +66,7 @@ func (m *MenuRepository) RemoveItem(id id.ID) error {
 
 func (m *MenuRepository) CreateMenuCategory(category model.MenuCategory) error {
 	if _, ok := m.category[category.ID]; ok {
-		return fmt.Errorf("category already exists")
+		return repositories.ErrAlreadyExists
 	}
 
 	m.category[category.ID] = menuCategoryFromModel(category)
@@ -81,7 +85,7 @@ func (m *MenuRepository) GetMenuCategory(id id.ID) *model.MenuCategory {
 
 func (m *MenuRepository) RemoveCategory(id id.ID) error {
 	if _, ok := m.category[id]; !ok {
-		return fmt.Errorf("category not found")
+		return repositories.ErrNotFound
 	}
 
 	delete(m.category, id)
@@ -91,7 +95,7 @@ func (m *MenuRepository) RemoveCategory(id id.ID) error {
 func (m *MenuRepository) UpdateMenuCategory(id id.ID, fn func(menu *model.MenuCategory) error) error {
 	category := m.GetMenuCategory(id)
 	if category == nil {
-		return fmt.Errorf("category not found")
+		return repositories.ErrNotFound
 	}
 
 	if err := fn(category); err != nil {

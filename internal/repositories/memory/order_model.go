@@ -6,29 +6,29 @@ import (
 )
 
 type order struct {
-	ID             id.ID
-	TableID        id.ID
-	ItemIDs        []id.ID
-	Status         model.OrderStatus
-	PreparationIDs []id.ID
+	iD             id.ID
+	tableID        id.ID
+	itemIDs        []id.ID
+	status         model.OrderStatus
+	preparationIDs []id.ID
 }
 
 func orderFromModel(m model.Order) order {
 	return order{
-		ID:             m.ID,
-		TableID:        m.TableID,
-		ItemIDs:        m.MenuItemIDs,
-		Status:         m.Status,
-		PreparationIDs: m.PreparationIDs,
+		iD:             m.ID,
+		tableID:        m.TableID,
+		itemIDs:        m.MenuItemIDs,
+		status:         m.Status,
+		preparationIDs: m.PreparationIDs,
 	}
 }
 
 func (m order) toModel() model.Order {
 	return model.Order{
-		ID:             m.ID,
-		TableID:        m.TableID,
-		MenuItemIDs:    m.ItemIDs,
-		Status:         m.Status,
-		PreparationIDs: m.PreparationIDs,
+		ID:             m.iD,
+		TableID:        m.tableID,
+		MenuItemIDs:    m.itemIDs,
+		Status:         m.status,
+		PreparationIDs: m.preparationIDs,
 	}
 }

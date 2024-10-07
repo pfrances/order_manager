@@ -6,24 +6,24 @@ import (
 )
 
 type menuItem struct {
-	ID    id.ID
-	Name  string
-	Price int
+	id    id.ID
+	name  string
+	price int
 }
 
 func menuItemFromModel(m model.MenuItem) menuItem {
 	return menuItem{
-		ID:    m.ID,
-		Name:  m.Name,
-		Price: m.Price,
+		id:    m.ID,
+		name:  m.Name,
+		price: m.Price,
 	}
 }
 
 func (m menuItem) toModel() model.MenuItem {
 	return model.MenuItem{
-		ID:    m.ID,
-		Name:  m.Name,
-		Price: m.Price,
+		ID:    m.id,
+		Name:  m.name,
+		Price: m.price,
 	}
 }
 

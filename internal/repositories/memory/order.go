@@ -1,9 +1,9 @@
 package memory
 
 import (
-	"fmt"
 	"order_manager/internal/id"
 	"order_manager/internal/model"
+	"order_manager/internal/repositories"
 )
 
 type OrderRepository struct {
@@ -15,6 +15,10 @@ func NewOrderRepository() *OrderRepository {
 }
 
 func (m *OrderRepository) CreateOrder(order model.Order) error {
+	if _, ok := m.order[order.ID]; ok {
+		return repositories.ErrAlreadyExists
+	}
+
 	m.order[order.ID] = orderFromModel(order)
 	return nil
 }
@@ -31,7 +35,7 @@ func (m *OrderRepository) GetOrder(id id.ID) *model.Order {
 
 func (m *OrderRepository) RemoveOrder(id id.ID) error {
 	if _, ok := m.order[id]; !ok {
-		return fmt.Errorf("order not found")
+		return repositories.ErrNotFound
 	}
 
 	delete(m.order, id)
@@ -41,7 +45,7 @@ func (m *OrderRepository) RemoveOrder(id id.ID) error {
 func (m *OrderRepository) UpdateOrder(id id.ID, fn func(order *model.Order) error) error {
 	order, ok := m.order[id]
 	if !ok {
-		return fmt.Errorf("order not found")
+		return repositories.ErrNotFound
 	}
 
 	modelOrder := order.toModel()

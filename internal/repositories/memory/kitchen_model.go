@@ -12,7 +12,7 @@ type Preparation struct {
 	status     model.PreparationStatus
 }
 
-func fromModel(p model.Preparation) Preparation {
+func preparationFromModel(p model.Preparation) Preparation {
 	return Preparation{
 		iD:         p.ID,
 		orderID:    p.OrderID,
