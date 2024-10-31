@@ -1,12 +1,19 @@
 ## ENTITY RELATIONSHIP
 ```mermaid
 erDiagram
-    MENU  ||--|{ MENU_CATEGORY : "is composed of"
-    MENU_CATEGORY }|--|{ MENU_ITEM : contain
+    MENU  ||--o{ MENU_CATEGORY : "is composed of"
+    MENU_CATEGORY }|--o{ MENU_ITEM : contain
 
-    TABLE ||--|| BILL : has
+    MENU_CATEGORY {
+        string name
+    }
+
+    MENU_ITEM {
+	    string name
+	    int price
+    }
+
     TABLE ||--o{ ORDER : has
-    ORDER ||--|{ MENU_ITEM : contain
     ORDER ||--|{ PREPARATION: imply
     ORDER{
         string status "taken | done | aborted"
@@ -22,4 +29,5 @@ erDiagram
         int amount
         int alreadyPaid
     }
+    BILL ||--|| TABLE : "has reference of"
 ```

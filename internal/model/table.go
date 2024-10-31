@@ -7,3 +7,9 @@ type Table struct {
 	OrderIDs []id.ID
 	BillID   id.ID
 }
+
+type Table2 struct {
+	ID     id.ID
+	Orders []Order
+	Bill   []Bill
+}
