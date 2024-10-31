@@ -1,9 +1,14 @@
-package main
+package domain
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 var (
+	EUNKNOWN  = "EUNKNOWN"
 	ENOTFOUND = "ENOTFOUND"
+	EINVALID  = "EINVALID"
 )
 
 type Error struct {
@@ -13,6 +18,16 @@ type Error struct {
 
 func (e *Error) Error() string {
 	return fmt.Sprintf("%s: %s", e.code, e.message)
+}
+
+func ErrorCode(err error) string {
+	var e *Error
+	if err == nil {
+		return ""
+	} else if errors.As(err, &e) {
+		return e.code
+	}
+	return EUNKNOWN
 }
 
 func Errorf(code string, format string, args ...interface{}) *Error {
