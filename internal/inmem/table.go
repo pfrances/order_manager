@@ -14,7 +14,6 @@ type Table struct {
 func NewTable() *Table {
 	return &Table{
 		tables: make(map[id.ID]domain.Table),
-		mu:     sync.Mutex{},
 	}
 }
 

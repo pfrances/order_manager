@@ -16,7 +16,6 @@ func NewMenu() *Menu {
 	return &Menu{
 		categories: make(map[id.ID]domain.MenuCategory),
 		items:      make(map[id.ID]domain.MenuItem),
-		mu:         sync.Mutex{},
 	}
 }
 
