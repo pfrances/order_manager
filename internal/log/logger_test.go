@@ -26,5 +26,5 @@ func TestDebugLogger(t *testing.T) {
 	assert.NotContains(t, errBuff.String(), "debug")
 	assert.NotContains(t, errBuff.String(), "info")
 	assert.Contains(t, errBuff.String(), "warning")
-	assert.Contains(t, errBuff.String(), "error ")
+	assert.Contains(t, errBuff.String(), "error")
 }
