@@ -1,12 +1,21 @@
 package domain
 
 import (
+	"context"
 	"order_manager/internal/id"
+)
+
+type TableStatus string
+
+const (
+	TableStatusOpened TableStatus = "opened"
+	TableStatusClosed TableStatus = "closed"
 )
 
 type Table struct {
 	ID     id.ID
 	Orders []Order
+	Status TableStatus
 }
 
 type OrderStatus string
@@ -26,7 +35,6 @@ type Order struct {
 type PreparationStatus string
 
 const (
-	preparationStatusInvalid    PreparationStatus = "invalid"
 	PreparationStatusPending    PreparationStatus = "pending"
 	PreparationStatusInProgress PreparationStatus = "in progress"
 	PreparationStatusReady      PreparationStatus = "ready"
@@ -41,25 +49,47 @@ type Preparation struct {
 }
 
 type TableRepository interface {
-	Save(table Table) error
-	Find(id id.ID) (Table, error)
+	Save(ctx context.Context, table Table) error
+	FindByID(ctx context.Context, id id.ID) (Table, error)
+	FindByStatus(ctx context.Context, status TableStatus) ([]Table, error)
 }
 
 type TableService struct {
 	repo TableRepository
 }
 
+// NewTableService creates a new table service.
+// The service is responsible for handling table related operations:
+// such as opening and closing tables, taking orders, and managing preparations.
 func NewTableService(repo TableRepository) *TableService {
 	return &TableService{repo: repo}
 }
 
-func (s *TableService) CreateTable() (Table, error) {
+// FindTable returns a table by its ID.
+// Possible errors:
+// - ENOTFOUND if the table could not be found.
+func (s *TableService) FindTable(ctx context.Context, tableID id.ID) (Table, error) {
+	return s.repo.FindByID(ctx, tableID)
+}
+
+// FindOpenedTables returns all tables with an open status.
+// Possible errors:
+// - Any error returned by the repository when fetching the tables.
+func (s *TableService) FindOpenedTables(ctx context.Context) ([]Table, error) {
+	return s.repo.FindByStatus(ctx, TableStatusOpened)
+}
+
+// OpenTable creates a new table with an open status and saves it to the repository.
+// Possible errors:
+// - Any error returned by the repository when saving the table.
+func (s *TableService) OpenTable(ctx context.Context) (Table, error) {
 	table := Table{
 		ID:     id.NewID(),
+		Status: TableStatusOpened,
 		Orders: make([]Order, 0),
 	}
 
-	err := s.repo.Save(table)
+	err := s.repo.Save(ctx, table)
 	if err != nil {
 		return Table{}, err
 	}
@@ -67,19 +97,65 @@ func (s *TableService) CreateTable() (Table, error) {
 	return table, nil
 }
 
-func (s *TableService) TakeOrder(tableID id.ID, menuItem []MenuItem) (Order, error) {
-	table, err := s.repo.Find(tableID)
+// CloseTable closes a table by setting its status to closed.
+// Possible errors:
+// - ENOTFOUND if the table could not be found.
+// - EINVALID if the table is already closed.
+// - Any error returned by the repository when saving the table.
+func (s *TableService) CloseTable(ctx context.Context, tableID id.ID) error {
+	table, err := s.repo.FindByID(ctx, tableID)
+	if err != nil {
+		return err
+	}
+
+	if table.Status == TableStatusClosed {
+		return Errorf(EINVALID, "table %s is already closed", tableID)
+	}
+
+	table.Status = TableStatusClosed
+
+	err = s.repo.Save(ctx, table)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// TakeOrder creates a new order for a table with the given menu items.
+// Possible errors:
+// - ENOTFOUND if the table could not be found.
+// - EINVALID if the table is not open.
+// - EINVALID if any of the menu items are invalid or the slice is empty.
+// - Any error returned by the repository when saving the table.
+func (s *TableService) TakeOrder(ctx context.Context, tableID id.ID, menuItems []MenuItem) (Order, error) {
+
+	if len(menuItems) == 0 {
+		return Order{}, Errorf(EINVALID, "no menu items provided")
+	}
+
+	for _, item := range menuItems {
+		if !item.IsValid() {
+			return Order{}, Errorf(EINVALID, "invalid menu item %s", item.ID)
+		}
+	}
+
+	table, err := s.repo.FindByID(ctx, tableID)
 	if err != nil {
 		return Order{}, err
+	}
+
+	if table.Status != TableStatusOpened {
+		return Order{}, Errorf(EINVALID, "table %s is not open", tableID)
 	}
 
 	order := Order{
 		ID:           id.NewID(),
 		Status:       OrderStatusTaken,
-		Preparations: make([]Preparation, 0, len(menuItem)),
+		Preparations: make([]Preparation, 0, len(menuItems)),
 	}
 
-	for _, item := range menuItem {
+	for _, item := range menuItems {
 		prep := Preparation{
 			ID:       id.NewID(),
 			MenuItem: item,
@@ -90,7 +166,7 @@ func (s *TableService) TakeOrder(tableID id.ID, menuItem []MenuItem) (Order, err
 
 	table.Orders = append(table.Orders, order)
 
-	err = s.repo.Save(table)
+	err = s.repo.Save(ctx, table)
 	if err != nil {
 		return Order{}, err
 	}
@@ -98,10 +174,23 @@ func (s *TableService) TakeOrder(tableID id.ID, menuItem []MenuItem) (Order, err
 	return order, nil
 }
 
-func (s *TableService) StartPreparation(tableID, orderID, preparationID id.ID) error {
-	table, err := s.repo.Find(tableID)
+// StartPreparation sets the status of a preparation to in progress.
+//
+// Possible errors:
+// - ENOTFOUND if the table could not be found.
+// - ENOTFOUND if the order could not be found.
+// - ENOTFOUND if the preparation could not be found.
+// - EINVALID if the table is not open.
+// - EINVALID if the preparation is not pending.
+// - Any error returned by the repository when saving the table.
+func (s *TableService) StartPreparation(ctx context.Context, tableID, orderID, preparationID id.ID) error {
+	table, err := s.repo.FindByID(ctx, tableID)
 	if err != nil {
 		return err
+	}
+
+	if table.Status != TableStatusOpened {
+		return Errorf(EINVALID, "table %s is not open", tableID)
 	}
 
 	order, err := table.findOrder(orderID)
@@ -122,7 +211,7 @@ func (s *TableService) StartPreparation(tableID, orderID, preparationID id.ID) e
 	order.updatePreparation(prep)
 	table.updateOrder(order)
 
-	err = s.repo.Save(table)
+	err = s.repo.Save(ctx, table)
 	if err != nil {
 		return err
 	}
@@ -130,10 +219,22 @@ func (s *TableService) StartPreparation(tableID, orderID, preparationID id.ID) e
 	return nil
 }
 
-func (s *TableService) FinishPreparation(tableID, orderID, preparationID id.ID) error {
-	table, err := s.repo.Find(tableID)
+// FinishPreparation sets the status of a preparation to ready.
+// Possible errors:
+// - ENOTFOUND if the table could not be found.
+// - ENOTFOUND if the order could not be found.
+// - ENOTFOUND if the preparation could not be found.
+// - EINVALID if the table is not open.
+// - EINVALID if the preparation is not in progress.
+// - Any error returned by the repository when saving the table.
+func (s *TableService) FinishPreparation(ctx context.Context, tableID, orderID, preparationID id.ID) error {
+	table, err := s.repo.FindByID(ctx, tableID)
 	if err != nil {
 		return err
+	}
+
+	if table.Status != TableStatusOpened {
+		return Errorf(EINVALID, "table %s is not open", tableID)
 	}
 
 	order, err := table.findOrder(orderID)
@@ -154,7 +255,7 @@ func (s *TableService) FinishPreparation(tableID, orderID, preparationID id.ID) 
 	order.updatePreparation(prep)
 	table.updateOrder(order)
 
-	err = s.repo.Save(table)
+	err = s.repo.Save(ctx, table)
 	if err != nil {
 		return err
 	}
@@ -162,10 +263,22 @@ func (s *TableService) FinishPreparation(tableID, orderID, preparationID id.ID) 
 	return nil
 }
 
-func (s *TableService) ServePreparation(tableID id.ID, orderID id.ID, prepID id.ID) error {
-	table, err := s.repo.Find(tableID)
+// ServePreparation sets the status of a preparation to served.
+// Possible errors:
+// - ENOTFOUND if the table could not be found.
+// - ENOTFOUND if the order could not be found.
+// - ENOTFOUND if the preparation could not be found.
+// - EINVALID if the table is not open.
+// - EINVALID if the preparation is not ready.
+// - Any error returned by the repository when saving the table.
+func (s *TableService) ServePreparation(ctx context.Context, tableID id.ID, orderID id.ID, prepID id.ID) error {
+	table, err := s.repo.FindByID(ctx, tableID)
 	if err != nil {
 		return err
+	}
+
+	if table.Status != TableStatusOpened {
+		return Errorf(EINVALID, "table %s is not open", tableID)
 	}
 
 	order, err := table.findOrder(orderID)
@@ -199,7 +312,7 @@ func (s *TableService) ServePreparation(tableID id.ID, orderID id.ID, prepID id.
 
 	table.updateOrder(order)
 
-	err = s.repo.Save(table)
+	err = s.repo.Save(ctx, table)
 	if err != nil {
 		return err
 	}

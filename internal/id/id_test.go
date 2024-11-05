@@ -8,9 +8,20 @@ import (
 )
 
 func TestNewIDCollision(t *testing.T) {
-	asserts := assert.New(t)
 	firstID := id.NewID()
 	secondID := id.NewID()
 
-	asserts.NotEqual(firstID, secondID)
+	assert.NotEqual(t, firstID, secondID)
+}
+
+func TestNilID(t *testing.T) {
+	nilID := id.NilID()
+
+	assert.True(t, nilID.IsNil())
+}
+
+func TestString(t *testing.T) {
+	id := id.NewID()
+
+	assert.NotEqual(t, id.String(), "")
 }

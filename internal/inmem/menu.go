@@ -1,6 +1,7 @@
 package inmem
 
 import (
+	"context"
 	"order_manager/internal/domain"
 	"order_manager/internal/id"
 	"sync"
@@ -19,7 +20,7 @@ func NewMenu() *Menu {
 	}
 }
 
-func (m *Menu) SaveItem(item domain.MenuItem) error {
+func (m *Menu) SaveItem(ctx context.Context, item domain.MenuItem) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -27,7 +28,7 @@ func (m *Menu) SaveItem(item domain.MenuItem) error {
 	return nil
 }
 
-func (m *Menu) FindItem(id id.ID) (domain.MenuItem, error) {
+func (m *Menu) FindItem(ctx context.Context, id id.ID) (domain.MenuItem, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -38,7 +39,22 @@ func (m *Menu) FindItem(id id.ID) (domain.MenuItem, error) {
 	return item, nil
 }
 
-func (m *Menu) SaveCategory(category domain.MenuCategory) error {
+func (m *Menu) FindItems(ctx context.Context, ids []id.ID) ([]domain.MenuItem, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	items := make([]domain.MenuItem, 0, len(ids))
+	for _, id := range ids {
+		item, ok := m.items[id]
+		if !ok {
+			return nil, domain.Errorf(domain.ENOTFOUND, "menu item with id %s not found", id)
+		}
+		items = append(items, item)
+	}
+	return items, nil
+}
+
+func (m *Menu) SaveCategory(ctx context.Context, category domain.MenuCategory) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -46,7 +62,7 @@ func (m *Menu) SaveCategory(category domain.MenuCategory) error {
 	return nil
 }
 
-func (m *Menu) FindCategory(id id.ID) (domain.MenuCategory, error) {
+func (m *Menu) FindCategory(ctx context.Context, id id.ID) (domain.MenuCategory, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 

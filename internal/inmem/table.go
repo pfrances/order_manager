@@ -1,6 +1,7 @@
 package inmem
 
 import (
+	"context"
 	"order_manager/internal/domain"
 	"order_manager/internal/id"
 	"sync"
@@ -17,7 +18,7 @@ func NewTable() *Table {
 	}
 }
 
-func (t *Table) Save(table domain.Table) error {
+func (t *Table) Save(ctx context.Context, table domain.Table) error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
@@ -25,7 +26,7 @@ func (t *Table) Save(table domain.Table) error {
 	return nil
 }
 
-func (t *Table) Find(id id.ID) (domain.Table, error) {
+func (t *Table) FindByID(ctx context.Context, id id.ID) (domain.Table, error) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
@@ -34,4 +35,17 @@ func (t *Table) Find(id id.ID) (domain.Table, error) {
 		return domain.Table{}, domain.Errorf(domain.ENOTFOUND, "table with id %s not found", id)
 	}
 	return table, nil
+}
+
+func (t *Table) FindByStatus(ctx context.Context, status domain.TableStatus) ([]domain.Table, error) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	tables := make([]domain.Table, 0)
+	for _, table := range t.tables {
+		if table.Status == status {
+			tables = append(tables, table)
+		}
+	}
+	return tables, nil
 }

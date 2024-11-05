@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"context"
 	"order_manager/internal/id"
 )
 
@@ -22,8 +23,8 @@ type Bill struct {
 }
 
 type BillRepository interface {
-	Save(bill Bill) error
-	Find(id id.ID) (Bill, error)
+	Save(ctx context.Context, bill Bill) error
+	Find(ctx context.Context, id id.ID) (Bill, error)
 }
 
 type BillService struct {
@@ -34,7 +35,11 @@ func NewBillService(repo BillRepository) *BillService {
 	return &BillService{repo: repo}
 }
 
-func (s *BillService) GenerateBill(table Table) (Bill, error) {
+func (s *BillService) GenerateBill(ctx context.Context, table Table) (Bill, error) {
+	if table.Status != TableStatusClosed {
+		return Bill{}, Errorf(EINVALID, "table with id %s is not closed", table.ID)
+	}
+
 	bill := Bill{
 		ID:      id.NewID(),
 		TableID: table.ID,
@@ -48,11 +53,11 @@ func (s *BillService) GenerateBill(table Table) (Bill, error) {
 		}
 	}
 
-	return bill, s.repo.Save(bill)
+	return bill, s.repo.Save(ctx, bill)
 }
 
-func (s *BillService) PayBill(billID id.ID, amount int) error {
-	bill, err := s.repo.Find(billID)
+func (s *BillService) PayBill(ctx context.Context, billID id.ID, amount int) error {
+	bill, err := s.repo.Find(ctx, billID)
 	if err != nil {
 		return err
 	}
@@ -72,5 +77,5 @@ func (s *BillService) PayBill(billID id.ID, amount int) error {
 		bill.Status = BillPartiallyPaid
 	}
 
-	return s.repo.Save(bill)
+	return s.repo.Save(ctx, bill)
 }

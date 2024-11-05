@@ -1,6 +1,9 @@
 package domain
 
-import "order_manager/internal/id"
+import (
+	"context"
+	"order_manager/internal/id"
+)
 
 type MenuCategory struct {
 	ID        id.ID
@@ -14,12 +17,17 @@ type MenuItem struct {
 	Price int
 }
 
-type MenuRepository interface {
-	SaveItem(item MenuItem) error
-	FindItem(id id.ID) (MenuItem, error)
+func (i MenuItem) IsValid() bool {
+	return i.ID != id.NilID() && i.Name != "" && i.Price > 0
+}
 
-	SaveCategory(category MenuCategory) error
-	FindCategory(id id.ID) (MenuCategory, error)
+type MenuRepository interface {
+	SaveItem(ctx context.Context, item MenuItem) error
+	FindItem(ctx context.Context, id id.ID) (MenuItem, error)
+	FindItems(ctx context.Context, ids []id.ID) ([]MenuItem, error)
+
+	SaveCategory(ctx context.Context, category MenuCategory) error
+	FindCategory(ctx context.Context, id id.ID) (MenuCategory, error)
 }
 
 type MenuService struct {
@@ -30,14 +38,18 @@ func NewMenuService(repo MenuRepository) *MenuService {
 	return &MenuService{repo: repo}
 }
 
-func (s *MenuService) CreateCategory(name string) (MenuCategory, error) {
+func (s *MenuService) FindMenuItems(ctx context.Context, itemIDs []id.ID) ([]MenuItem, error) {
+	return s.repo.FindItems(ctx, itemIDs)
+}
+
+func (s *MenuService) CreateCategory(ctx context.Context, name string) (MenuCategory, error) {
 	category := MenuCategory{
 		ID:        id.NewID(),
 		Name:      name,
 		MenuItems: make([]MenuItem, 0),
 	}
 
-	err := s.repo.SaveCategory(category)
+	err := s.repo.SaveCategory(ctx, category)
 	if err != nil {
 		return MenuCategory{}, err
 	}
@@ -45,14 +57,14 @@ func (s *MenuService) CreateCategory(name string) (MenuCategory, error) {
 	return category, nil
 }
 
-func (s *MenuService) CreateMenuItem(name string, price int) (MenuItem, error) {
+func (s *MenuService) CreateMenuItem(ctx context.Context, name string, price int) (MenuItem, error) {
 	item := MenuItem{
 		ID:    id.NewID(),
 		Name:  name,
 		Price: price,
 	}
 
-	err := s.repo.SaveItem(item)
+	err := s.repo.SaveItem(ctx, item)
 	if err != nil {
 		return MenuItem{}, err
 	}
@@ -60,17 +72,17 @@ func (s *MenuService) CreateMenuItem(name string, price int) (MenuItem, error) {
 	return item, nil
 }
 
-func (s *MenuService) AddItemToCategory(categoryID id.ID, itemID id.ID) error {
-	category, err := s.repo.FindCategory(categoryID)
+func (s *MenuService) AddItemToCategory(ctx context.Context, categoryID id.ID, itemID id.ID) error {
+	category, err := s.repo.FindCategory(ctx, categoryID)
 	if err != nil {
 		return err
 	}
 
-	item, err := s.repo.FindItem(itemID)
+	item, err := s.repo.FindItem(ctx, itemID)
 	if err != nil {
 		return err
 	}
 
 	category.MenuItems = append(category.MenuItems, item)
-	return s.repo.SaveCategory(category)
+	return s.repo.SaveCategory(ctx, category)
 }

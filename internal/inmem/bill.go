@@ -1,6 +1,7 @@
 package inmem
 
 import (
+	"context"
 	"order_manager/internal/domain"
 	"order_manager/internal/id"
 	"sync"
@@ -17,7 +18,7 @@ func NewBill() *Bill {
 	}
 }
 
-func (b *Bill) Save(bill domain.Bill) error {
+func (b *Bill) Save(ctx context.Context, bill domain.Bill) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -25,7 +26,7 @@ func (b *Bill) Save(bill domain.Bill) error {
 	return nil
 }
 
-func (b *Bill) Find(id id.ID) (domain.Bill, error) {
+func (b *Bill) Find(ctx context.Context, id id.ID) (domain.Bill, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
