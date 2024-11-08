@@ -15,12 +15,12 @@ func TestCreateBillSuccess(t *testing.T) {
 	billRepo := inmem.NewBill()
 	billService := domain.NewBillService(billRepo)
 	table := domain.Table{
-		ID:     id.NewID(),
+		ID:     id.New(),
 		Status: domain.TableStatusClosed,
 		Orders: []domain.Order{
-			{ID: id.NewID(), Preparations: []domain.Preparation{
-				{MenuItem: domain.MenuItem{ID: id.NewID(), Name: "Spaghetti", Price: 100}},
-				{MenuItem: domain.MenuItem{ID: id.NewID(), Name: "Pizza", Price: 150}},
+			{ID: id.New(), Preparations: []domain.Preparation{
+				{MenuItem: domain.MenuItem{ID: id.New(), Name: "Spaghetti", Price: 100}},
+				{MenuItem: domain.MenuItem{ID: id.New(), Name: "Pizza", Price: 150}},
 			}},
 		},
 	}
@@ -36,12 +36,12 @@ func TestPayBillSuccess(t *testing.T) {
 	billRepo := inmem.NewBill()
 	billService := domain.NewBillService(billRepo)
 	bill := domain.Bill{
-		ID:      id.NewID(),
-		TableID: id.NewID(),
+		ID:      id.New(),
+		TableID: id.New(),
 		Status:  domain.BillStatusPending,
 		Items: []domain.MenuItem{
-			{ID: id.NewID(), Name: "Spaghetti", Price: 100},
-			{ID: id.NewID(), Name: "Pizza", Price: 150},
+			{ID: id.New(), Name: "Spaghetti", Price: 100},
+			{ID: id.New(), Name: "Pizza", Price: 150},
 		},
 		TotalAmount: 250,
 	}
@@ -50,22 +50,22 @@ func TestPayBillSuccess(t *testing.T) {
 	err := billService.PayBill(context.Background(), bill.ID, 250)
 
 	require.NoError(t, err, "failed to pay bill")
-	bill, err = billRepo.Find(context.Background(), bill.ID)
+	bill, err = billRepo.FindByID(context.Background(), bill.ID)
 	require.NoError(t, err, "failed to find bill")
 	assert.Equal(t, domain.BillStatusPaid, bill.Status, "bill status not paid")
-	assert.Equal(t, 250, bill.AlreadyPaid, "bill already paid not correct")
+	assert.Equal(t, 250, bill.Paid, "bill already paid not correct")
 }
 
 func TestPayBillPartiallySuccess(t *testing.T) {
 	billRepo := inmem.NewBill()
 	billService := domain.NewBillService(billRepo)
 	bill := domain.Bill{
-		ID:      id.NewID(),
-		TableID: id.NewID(),
+		ID:      id.New(),
+		TableID: id.New(),
 		Status:  domain.BillStatusPending,
 		Items: []domain.MenuItem{
-			{ID: id.NewID(), Name: "Spaghetti", Price: 100},
-			{ID: id.NewID(), Name: "Pizza", Price: 150},
+			{ID: id.New(), Name: "Spaghetti", Price: 100},
+			{ID: id.New(), Name: "Pizza", Price: 150},
 		},
 		TotalAmount: 250,
 	}
@@ -74,21 +74,21 @@ func TestPayBillPartiallySuccess(t *testing.T) {
 	err := billService.PayBill(context.Background(), bill.ID, 100)
 
 	require.NoError(t, err, "failed to pay bill")
-	bill, err = billRepo.Find(context.Background(), bill.ID)
+	bill, err = billRepo.FindByID(context.Background(), bill.ID)
 	require.NoError(t, err, "failed to find bill")
 	assert.Equal(t, domain.BillPartiallyPaid, bill.Status, "bill status not partially paid")
-	assert.Equal(t, 100, bill.AlreadyPaid, "bill already paid not correct")
+	assert.Equal(t, 100, bill.Paid, "bill already paid not correct")
 }
 
 func TestPayBillAlreadyPaid(t *testing.T) {
 	billRepo := inmem.NewBill()
 	billService := domain.NewBillService(billRepo)
 	bill := domain.Bill{
-		ID:          id.NewID(),
-		TableID:     id.NewID(),
+		ID:          id.New(),
+		TableID:     id.New(),
 		Status:      domain.BillStatusPaid,
 		TotalAmount: 250,
-		AlreadyPaid: 250,
+		Paid:        250,
 	}
 	billRepo.Save(context.Background(), bill)
 
@@ -101,8 +101,8 @@ func TestPayBillMoreThanTotalAmount(t *testing.T) {
 	billRepo := inmem.NewBill()
 	billService := domain.NewBillService(billRepo)
 	bill := domain.Bill{
-		ID:          id.NewID(),
-		TableID:     id.NewID(),
+		ID:          id.New(),
+		TableID:     id.New(),
 		Status:      domain.BillStatusPending,
 		TotalAmount: 250,
 	}
@@ -117,11 +117,11 @@ func TestPayBillPartiallyMoreThanTotalAmount(t *testing.T) {
 	billRepo := inmem.NewBill()
 	billService := domain.NewBillService(billRepo)
 	bill := domain.Bill{
-		ID:          id.NewID(),
-		TableID:     id.NewID(),
+		ID:          id.New(),
+		TableID:     id.New(),
 		Status:      domain.BillStatusPending,
 		TotalAmount: 200,
-		AlreadyPaid: 100,
+		Paid:        100,
 	}
 	billRepo.Save(context.Background(), bill)
 
@@ -134,7 +134,7 @@ func TestPayBillNotFound(t *testing.T) {
 	billRepo := inmem.NewBill()
 	billService := domain.NewBillService(billRepo)
 
-	err := billService.PayBill(context.Background(), id.NewID(), 100)
+	err := billService.PayBill(context.Background(), id.New(), 100)
 
 	require.Error(t, err, "paying not found bill should fail")
 }

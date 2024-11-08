@@ -2,3 +2,5 @@
 *.out
 *.html
 order_manager
+.env
+db

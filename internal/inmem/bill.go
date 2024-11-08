@@ -19,6 +19,10 @@ func NewBill() *Bill {
 }
 
 func (b *Bill) Save(ctx context.Context, bill domain.Bill) error {
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -26,7 +30,11 @@ func (b *Bill) Save(ctx context.Context, bill domain.Bill) error {
 	return nil
 }
 
-func (b *Bill) Find(ctx context.Context, id id.ID) (domain.Bill, error) {
+func (b *Bill) FindByID(ctx context.Context, id id.ID) (domain.Bill, error) {
+	if ctx.Err() != nil {
+		return domain.Bill{}, ctx.Err()
+	}
+
 	b.mu.Lock()
 	defer b.mu.Unlock()
 

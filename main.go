@@ -6,8 +6,8 @@ import (
 	"io"
 	"order_manager/internal/domain"
 	"order_manager/internal/http"
-	"order_manager/internal/inmem"
 	"order_manager/internal/log"
+	"order_manager/internal/sqlite"
 	"os"
 	"os/signal"
 )
@@ -18,9 +18,14 @@ func run(ctx context.Context, stdout, stderr io.Writer) error {
 
 	logger := log.New(log.Info, stdout, stderr)
 
-	tableRepository := inmem.NewTable()
-	menuRepository := inmem.NewMenu()
-	billRepository := inmem.NewBill()
+	db, err := sqlite.NewDB("./db", logger)
+	if err != nil {
+		return err
+	}
+
+	tableRepository := sqlite.NewTable(db)
+	menuRepository := sqlite.NewMenu(db)
+	billRepository := sqlite.NewBill(db)
 
 	tableService := domain.NewTableService(tableRepository)
 	menuService := domain.NewMenuService(menuRepository)

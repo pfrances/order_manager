@@ -24,10 +24,10 @@ func TestCreateTable(t *testing.T) {
 func TestTakeOrderSuccess(t *testing.T) {
 	tableRepo := inmem.NewTable()
 	tableService := domain.NewTableService(tableRepo)
-	table := domain.Table{ID: id.NewID(), Orders: make([]domain.Order, 0), Status: domain.TableStatusOpened}
+	table := domain.Table{ID: id.New(), Orders: make([]domain.Order, 0), Status: domain.TableStatusOpened}
 	err := tableRepo.Save(context.Background(), table)
 	require.NoError(t, err, "Initial setup failed")
-	menuItem := domain.MenuItem{ID: id.NewID(), Name: "test", Price: 100}
+	menuItem := domain.MenuItem{ID: id.New(), Name: "test", Price: 100}
 
 	order, err := tableService.TakeOrder(context.Background(), table.ID, []domain.MenuItem{menuItem})
 
@@ -46,7 +46,7 @@ func TestTakeOrderTableNotFound(t *testing.T) {
 	tableRepo := inmem.NewTable()
 	tableService := domain.NewTableService(tableRepo)
 
-	_, err := tableService.TakeOrder(context.Background(), id.NewID(), []domain.MenuItem{{ID: id.NewID(), Name: "test", Price: 100}})
+	_, err := tableService.TakeOrder(context.Background(), id.New(), []domain.MenuItem{{ID: id.New(), Name: "test", Price: 100}})
 
 	require.Error(t, err, "take order should fail")
 }
@@ -54,9 +54,9 @@ func TestTakeOrderTableNotFound(t *testing.T) {
 func TestStartPreparationSuccess(t *testing.T) {
 	tableRepo := inmem.NewTable()
 	tableService := domain.NewTableService(tableRepo)
-	preparation := domain.Preparation{ID: id.NewID(), MenuItem: domain.MenuItem{ID: id.NewID(), Name: "test", Price: 100}, Status: domain.PreparationStatusPending}
-	order := domain.Order{ID: id.NewID(), Status: domain.OrderStatusTaken, Preparations: []domain.Preparation{preparation}}
-	table := domain.Table{ID: id.NewID(), Orders: []domain.Order{order}, Status: domain.TableStatusOpened}
+	preparation := domain.Preparation{ID: id.New(), MenuItem: domain.MenuItem{ID: id.New(), Name: "test", Price: 100}, Status: domain.PreparationStatusPending}
+	order := domain.Order{ID: id.New(), Status: domain.OrderStatusTaken, Preparations: []domain.Preparation{preparation}}
+	table := domain.Table{ID: id.New(), Orders: []domain.Order{order}, Status: domain.TableStatusOpened}
 	err := tableRepo.Save(context.Background(), table)
 	require.NoError(t, err, "Initial setup failed")
 
@@ -73,11 +73,11 @@ func TestStartPreparationSuccess(t *testing.T) {
 func TestStartPreparationOrderNotFound(t *testing.T) {
 	tableRepo := inmem.NewTable()
 	tableService := domain.NewTableService(tableRepo)
-	table := domain.Table{ID: id.NewID(), Orders: make([]domain.Order, 0), Status: domain.TableStatusOpened}
+	table := domain.Table{ID: id.New(), Orders: make([]domain.Order, 0), Status: domain.TableStatusOpened}
 	err := tableRepo.Save(context.Background(), table)
 	require.NoError(t, err, "Initial setup failed")
 
-	err = tableService.StartPreparation(context.Background(), table.ID, id.NewID(), id.NewID())
+	err = tableService.StartPreparation(context.Background(), table.ID, id.New(), id.New())
 
 	require.Error(t, err, "start preparation should fail")
 }
@@ -85,12 +85,12 @@ func TestStartPreparationOrderNotFound(t *testing.T) {
 func TestStartPreparationPreparationNotFound(t *testing.T) {
 	tableRepo := inmem.NewTable()
 	tableService := domain.NewTableService(tableRepo)
-	order := domain.Order{ID: id.NewID(), Status: domain.OrderStatusTaken, Preparations: make([]domain.Preparation, 0)}
-	table := domain.Table{ID: id.NewID(), Orders: []domain.Order{order}, Status: domain.TableStatusOpened}
+	order := domain.Order{ID: id.New(), Status: domain.OrderStatusTaken, Preparations: make([]domain.Preparation, 0)}
+	table := domain.Table{ID: id.New(), Orders: []domain.Order{order}, Status: domain.TableStatusOpened}
 	err := tableRepo.Save(context.Background(), table)
 	require.NoError(t, err, "Initial setup failed")
 
-	err = tableService.StartPreparation(context.Background(), table.ID, order.ID, id.NewID())
+	err = tableService.StartPreparation(context.Background(), table.ID, order.ID, id.New())
 
 	require.Error(t, err, "start preparation should fail")
 }
@@ -98,9 +98,9 @@ func TestStartPreparationPreparationNotFound(t *testing.T) {
 func TestStartPreparationPreparationNotPending(t *testing.T) {
 	tableRepo := inmem.NewTable()
 	tableService := domain.NewTableService(tableRepo)
-	preparation := domain.Preparation{ID: id.NewID(), MenuItem: domain.MenuItem{ID: id.NewID(), Name: "test", Price: 100}, Status: domain.PreparationStatusInProgress}
-	order := domain.Order{ID: id.NewID(), Status: domain.OrderStatusTaken, Preparations: []domain.Preparation{preparation}}
-	table := domain.Table{ID: id.NewID(), Orders: []domain.Order{order}, Status: domain.TableStatusOpened}
+	preparation := domain.Preparation{ID: id.New(), MenuItem: domain.MenuItem{ID: id.New(), Name: "test", Price: 100}, Status: domain.PreparationStatusInProgress}
+	order := domain.Order{ID: id.New(), Status: domain.OrderStatusTaken, Preparations: []domain.Preparation{preparation}}
+	table := domain.Table{ID: id.New(), Orders: []domain.Order{order}, Status: domain.TableStatusOpened}
 	err := tableRepo.Save(context.Background(), table)
 	require.NoError(t, err, "Initial setup failed")
 
@@ -112,9 +112,9 @@ func TestStartPreparationPreparationNotPending(t *testing.T) {
 func TestFinishPreparationSuccess(t *testing.T) {
 	tableRepo := inmem.NewTable()
 	tableService := domain.NewTableService(tableRepo)
-	preparation := domain.Preparation{ID: id.NewID(), MenuItem: domain.MenuItem{ID: id.NewID(), Name: "test", Price: 100}, Status: domain.PreparationStatusInProgress}
-	order := domain.Order{ID: id.NewID(), Status: domain.OrderStatusTaken, Preparations: []domain.Preparation{preparation}}
-	table := domain.Table{ID: id.NewID(), Orders: []domain.Order{order}, Status: domain.TableStatusOpened}
+	preparation := domain.Preparation{ID: id.New(), MenuItem: domain.MenuItem{ID: id.New(), Name: "test", Price: 100}, Status: domain.PreparationStatusInProgress}
+	order := domain.Order{ID: id.New(), Status: domain.OrderStatusTaken, Preparations: []domain.Preparation{preparation}}
+	table := domain.Table{ID: id.New(), Orders: []domain.Order{order}, Status: domain.TableStatusOpened}
 	err := tableRepo.Save(context.Background(), table)
 	require.NoError(t, err, "Initial setup failed")
 
@@ -132,11 +132,11 @@ func TestFinishPreparationSuccess(t *testing.T) {
 func TestFinishPreparationOrderNotFound(t *testing.T) {
 	tableRepo := inmem.NewTable()
 	tableService := domain.NewTableService(tableRepo)
-	table := domain.Table{ID: id.NewID(), Orders: make([]domain.Order, 0), Status: domain.TableStatusOpened}
+	table := domain.Table{ID: id.New(), Orders: make([]domain.Order, 0), Status: domain.TableStatusOpened}
 	err := tableRepo.Save(context.Background(), table)
 	require.NoError(t, err, "Initial setup failed")
 
-	err = tableService.FinishPreparation(context.Background(), table.ID, id.NewID(), id.NewID())
+	err = tableService.FinishPreparation(context.Background(), table.ID, id.New(), id.New())
 
 	require.Error(t, err, "finish preparation should fail")
 }
@@ -144,12 +144,12 @@ func TestFinishPreparationOrderNotFound(t *testing.T) {
 func TestFinishPreparationPreparationNotFound(t *testing.T) {
 	tableRepo := inmem.NewTable()
 	tableService := domain.NewTableService(tableRepo)
-	order := domain.Order{ID: id.NewID(), Status: domain.OrderStatusTaken, Preparations: make([]domain.Preparation, 0)}
-	table := domain.Table{ID: id.NewID(), Orders: []domain.Order{order}, Status: domain.TableStatusOpened}
+	order := domain.Order{ID: id.New(), Status: domain.OrderStatusTaken, Preparations: make([]domain.Preparation, 0)}
+	table := domain.Table{ID: id.New(), Orders: []domain.Order{order}, Status: domain.TableStatusOpened}
 	err := tableRepo.Save(context.Background(), table)
 	require.NoError(t, err, "Initial setup failed")
 
-	err = tableService.FinishPreparation(context.Background(), table.ID, order.ID, id.NewID())
+	err = tableService.FinishPreparation(context.Background(), table.ID, order.ID, id.New())
 
 	require.Error(t, err, "finish preparation should fail")
 }
@@ -157,9 +157,9 @@ func TestFinishPreparationPreparationNotFound(t *testing.T) {
 func TestFinishPreparationPreparationNotInProgress(t *testing.T) {
 	tableRepo := inmem.NewTable()
 	tableService := domain.NewTableService(tableRepo)
-	preparation := domain.Preparation{ID: id.NewID(), MenuItem: domain.MenuItem{ID: id.NewID(), Name: "test", Price: 100}, Status: domain.PreparationStatusReady}
-	order := domain.Order{ID: id.NewID(), Status: domain.OrderStatusTaken, Preparations: []domain.Preparation{preparation}}
-	table := domain.Table{ID: id.NewID(), Orders: []domain.Order{order}, Status: domain.TableStatusOpened}
+	preparation := domain.Preparation{ID: id.New(), MenuItem: domain.MenuItem{ID: id.New(), Name: "test", Price: 100}, Status: domain.PreparationStatusReady}
+	order := domain.Order{ID: id.New(), Status: domain.OrderStatusTaken, Preparations: []domain.Preparation{preparation}}
+	table := domain.Table{ID: id.New(), Orders: []domain.Order{order}, Status: domain.TableStatusOpened}
 	err := tableRepo.Save(context.Background(), table)
 	require.NoError(t, err, "Initial setup failed")
 
@@ -171,9 +171,9 @@ func TestFinishPreparationPreparationNotInProgress(t *testing.T) {
 func TestServeLastPreparationSuccess(t *testing.T) {
 	tableRepo := inmem.NewTable()
 	tableService := domain.NewTableService(tableRepo)
-	preparation := domain.Preparation{ID: id.NewID(), MenuItem: domain.MenuItem{ID: id.NewID(), Name: "test", Price: 100}, Status: domain.PreparationStatusReady}
-	order := domain.Order{ID: id.NewID(), Status: domain.OrderStatusTaken, Preparations: []domain.Preparation{preparation}}
-	table := domain.Table{ID: id.NewID(), Orders: []domain.Order{order}, Status: domain.TableStatusOpened}
+	preparation := domain.Preparation{ID: id.New(), MenuItem: domain.MenuItem{ID: id.New(), Name: "test", Price: 100}, Status: domain.PreparationStatusReady}
+	order := domain.Order{ID: id.New(), Status: domain.OrderStatusTaken, Preparations: []domain.Preparation{preparation}}
+	table := domain.Table{ID: id.New(), Orders: []domain.Order{order}, Status: domain.TableStatusOpened}
 	err := tableRepo.Save(context.Background(), table)
 	require.NoError(t, err, "Initial setup failed")
 
@@ -190,10 +190,10 @@ func TestServeLastPreparationSuccess(t *testing.T) {
 func TestServeNotLastPreparationSuccess(t *testing.T) {
 	tableRepo := inmem.NewTable()
 	tableService := domain.NewTableService(tableRepo)
-	preparation := domain.Preparation{ID: id.NewID(), MenuItem: domain.MenuItem{ID: id.NewID(), Name: "test", Price: 100}, Status: domain.PreparationStatusReady}
-	preparation2 := domain.Preparation{ID: id.NewID(), MenuItem: domain.MenuItem{ID: id.NewID(), Name: "test2", Price: 200}, Status: domain.PreparationStatusReady}
-	order := domain.Order{ID: id.NewID(), Status: domain.OrderStatusTaken, Preparations: []domain.Preparation{preparation, preparation2}}
-	table := domain.Table{ID: id.NewID(), Orders: []domain.Order{order}, Status: domain.TableStatusOpened}
+	preparation := domain.Preparation{ID: id.New(), MenuItem: domain.MenuItem{ID: id.New(), Name: "test", Price: 100}, Status: domain.PreparationStatusReady}
+	preparation2 := domain.Preparation{ID: id.New(), MenuItem: domain.MenuItem{ID: id.New(), Name: "test2", Price: 200}, Status: domain.PreparationStatusReady}
+	order := domain.Order{ID: id.New(), Status: domain.OrderStatusTaken, Preparations: []domain.Preparation{preparation, preparation2}}
+	table := domain.Table{ID: id.New(), Orders: []domain.Order{order}, Status: domain.TableStatusOpened}
 	err := tableRepo.Save(context.Background(), table)
 	require.NoError(t, err, "Initial setup failed")
 
@@ -209,11 +209,11 @@ func TestServeNotLastPreparationSuccess(t *testing.T) {
 func TestServePreparationOrderNotFound(t *testing.T) {
 	tableRepo := inmem.NewTable()
 	tableService := domain.NewTableService(tableRepo)
-	table := domain.Table{ID: id.NewID(), Orders: make([]domain.Order, 0), Status: domain.TableStatusOpened}
+	table := domain.Table{ID: id.New(), Orders: make([]domain.Order, 0), Status: domain.TableStatusOpened}
 	err := tableRepo.Save(context.Background(), table)
 	require.NoError(t, err, "Initial setup failed")
 
-	err = tableService.ServePreparation(context.Background(), table.ID, id.NewID(), id.NewID())
+	err = tableService.ServePreparation(context.Background(), table.ID, id.New(), id.New())
 
 	require.Error(t, err, "serve order should fail")
 }
@@ -221,12 +221,12 @@ func TestServePreparationOrderNotFound(t *testing.T) {
 func TestServePreparationPreparationNotFound(t *testing.T) {
 	tableRepo := inmem.NewTable()
 	tableService := domain.NewTableService(tableRepo)
-	order := domain.Order{ID: id.NewID(), Status: domain.OrderStatusTaken, Preparations: make([]domain.Preparation, 0)}
-	table := domain.Table{ID: id.NewID(), Orders: []domain.Order{order}, Status: domain.TableStatusOpened}
+	order := domain.Order{ID: id.New(), Status: domain.OrderStatusTaken, Preparations: make([]domain.Preparation, 0)}
+	table := domain.Table{ID: id.New(), Orders: []domain.Order{order}, Status: domain.TableStatusOpened}
 	err := tableRepo.Save(context.Background(), table)
 	require.NoError(t, err, "Initial setup failed")
 
-	err = tableService.ServePreparation(context.Background(), table.ID, order.ID, id.NewID())
+	err = tableService.ServePreparation(context.Background(), table.ID, order.ID, id.New())
 
 	require.Error(t, err, "serve order should fail")
 }
