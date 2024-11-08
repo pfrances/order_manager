@@ -42,10 +42,10 @@ func TestAddMenuCategory(t *testing.T) {
 func TestAddMenuItemToCategory(t *testing.T) {
 	menuRepo := inmem.NewMenu()
 	menuService := domain.NewMenuService(menuRepo)
-	category := domain.MenuCategory{ID: id.NewID(), Name: "Pasta"}
+	category := domain.MenuCategory{ID: id.New(), Name: "Pasta"}
 	err := menuRepo.SaveCategory(context.Background(), category)
 	require.Nil(t, err, "error creating category")
-	item := domain.MenuItem{ID: id.NewID(), Name: "Spaghetti", Price: 100}
+	item := domain.MenuItem{ID: id.New(), Name: "Spaghetti", Price: 100}
 	err = menuRepo.SaveItem(context.Background(), item)
 	require.Nil(t, err, "error creating menu item")
 
@@ -60,11 +60,11 @@ func TestAddMenuItemToCategory(t *testing.T) {
 func TestAddMenuItemToCategoryNotFound(t *testing.T) {
 	menuRepo := inmem.NewMenu()
 	menuService := domain.NewMenuService(menuRepo)
-	item := domain.MenuItem{ID: id.NewID(), Name: "Spaghetti", Price: 100}
+	item := domain.MenuItem{ID: id.New(), Name: "Spaghetti", Price: 100}
 	err := menuRepo.SaveItem(context.Background(), item)
 	require.Nil(t, err, "error creating menu item")
 
-	err = menuService.AddItemToCategory(context.Background(), id.NewID(), item.ID)
+	err = menuService.AddItemToCategory(context.Background(), id.New(), item.ID)
 
 	require.Error(t, err, "adding menu item to category should fail")
 }

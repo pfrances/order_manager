@@ -19,6 +19,10 @@ func NewTable() *Table {
 }
 
 func (t *Table) Save(ctx context.Context, table domain.Table) error {
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
@@ -27,6 +31,10 @@ func (t *Table) Save(ctx context.Context, table domain.Table) error {
 }
 
 func (t *Table) FindByID(ctx context.Context, id id.ID) (domain.Table, error) {
+	if ctx.Err() != nil {
+		return domain.Table{}, ctx.Err()
+	}
+
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
@@ -38,6 +46,10 @@ func (t *Table) FindByID(ctx context.Context, id id.ID) (domain.Table, error) {
 }
 
 func (t *Table) FindByStatus(ctx context.Context, status domain.TableStatus) ([]domain.Table, error) {
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+
 	t.mu.Lock()
 	defer t.mu.Unlock()
 

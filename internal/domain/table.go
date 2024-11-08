@@ -84,7 +84,7 @@ func (s *TableService) FindOpenedTables(ctx context.Context) ([]Table, error) {
 // - Any error returned by the repository when saving the table.
 func (s *TableService) OpenTable(ctx context.Context) (Table, error) {
 	table := Table{
-		ID:     id.NewID(),
+		ID:     id.New(),
 		Status: TableStatusOpened,
 		Orders: make([]Order, 0),
 	}
@@ -150,14 +150,14 @@ func (s *TableService) TakeOrder(ctx context.Context, tableID id.ID, menuItems [
 	}
 
 	order := Order{
-		ID:           id.NewID(),
+		ID:           id.New(),
 		Status:       OrderStatusTaken,
 		Preparations: make([]Preparation, 0, len(menuItems)),
 	}
 
 	for _, item := range menuItems {
 		prep := Preparation{
-			ID:       id.NewID(),
+			ID:       id.New(),
 			MenuItem: item,
 			Status:   PreparationStatusPending,
 		}

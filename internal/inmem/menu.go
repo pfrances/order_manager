@@ -21,6 +21,10 @@ func NewMenu() *Menu {
 }
 
 func (m *Menu) SaveItem(ctx context.Context, item domain.MenuItem) error {
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -29,6 +33,10 @@ func (m *Menu) SaveItem(ctx context.Context, item domain.MenuItem) error {
 }
 
 func (m *Menu) FindItem(ctx context.Context, id id.ID) (domain.MenuItem, error) {
+	if ctx.Err() != nil {
+		return domain.MenuItem{}, ctx.Err()
+	}
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -40,6 +48,10 @@ func (m *Menu) FindItem(ctx context.Context, id id.ID) (domain.MenuItem, error) 
 }
 
 func (m *Menu) FindItems(ctx context.Context, ids []id.ID) ([]domain.MenuItem, error) {
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -55,6 +67,10 @@ func (m *Menu) FindItems(ctx context.Context, ids []id.ID) ([]domain.MenuItem, e
 }
 
 func (m *Menu) SaveCategory(ctx context.Context, category domain.MenuCategory) error {
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -63,6 +79,10 @@ func (m *Menu) SaveCategory(ctx context.Context, category domain.MenuCategory) e
 }
 
 func (m *Menu) FindCategory(ctx context.Context, id id.ID) (domain.MenuCategory, error) {
+	if ctx.Err() != nil {
+		return domain.MenuCategory{}, ctx.Err()
+	}
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
 

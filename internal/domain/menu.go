@@ -44,7 +44,7 @@ func (s *MenuService) FindMenuItems(ctx context.Context, itemIDs []id.ID) ([]Men
 
 func (s *MenuService) CreateCategory(ctx context.Context, name string) (MenuCategory, error) {
 	category := MenuCategory{
-		ID:        id.NewID(),
+		ID:        id.New(),
 		Name:      name,
 		MenuItems: make([]MenuItem, 0),
 	}
@@ -59,7 +59,7 @@ func (s *MenuService) CreateCategory(ctx context.Context, name string) (MenuCate
 
 func (s *MenuService) CreateMenuItem(ctx context.Context, name string, price int) (MenuItem, error) {
 	item := MenuItem{
-		ID:    id.NewID(),
+		ID:    id.New(),
 		Name:  name,
 		Price: price,
 	}

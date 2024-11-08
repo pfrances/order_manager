@@ -1,27 +1,24 @@
 package id
 
 import (
-	"strconv"
-	"sync"
+	"github.com/google/uuid"
 )
 
-type ID int
+type ID struct {
+	uuid.UUID
+}
 
-var nextID = 1
-var mutex sync.Mutex
+func New() ID {
+	id, err := uuid.NewV7()
+	if err != nil {
+		panic(err)
+	}
 
-func NewID() ID {
-	mutex.Lock()
-	defer mutex.Unlock()
-
-	newID := ID(nextID)
-	nextID++
-
-	return newID
+	return ID(ID{id})
 }
 
 func NilID() ID {
-	return ID(0)
+	return ID(ID{uuid.Nil})
 }
 
 func (id ID) IsNil() bool {
@@ -29,5 +26,5 @@ func (id ID) IsNil() bool {
 }
 
 func (id ID) String() string {
-	return strconv.Itoa(int(id))
+	return id.UUID.String()
 }
