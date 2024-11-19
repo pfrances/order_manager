@@ -10,10 +10,11 @@ import (
 	"order_manager/internal/sqlite"
 	"os"
 	"os/signal"
+	"syscall"
 )
 
 func run(ctx context.Context, stdout, stderr io.Writer) error {
-	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
+	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
 	logger := log.New(log.Info, stdout, stderr)
@@ -43,7 +44,11 @@ func run(ctx context.Context, stdout, stderr io.Writer) error {
 
 func main() {
 	ctx := context.Background()
+
 	if err := run(ctx, os.Stdout, os.Stderr); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
 	}
+
+	fmt.Fprintln(os.Stdout, "Exiting gracefully")
 }

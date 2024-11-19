@@ -6,13 +6,13 @@ import (
 	"order_manager/internal/id"
 )
 
-func (s *server) registerBillRoutes(r *router) {
+func (s *Server) registerBillRoutes(r *router) {
 	billRouter := r.group("/bill")
 
 	billRouter.HandleFunc("POST /", s.handleGenerateBill)
 }
 
-func (s *server) handleGenerateBill(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleGenerateBill(w http.ResponseWriter, r *http.Request) {
 	type reqBody struct {
 		TableID id.ID `json:"table_id"`
 	}
@@ -24,14 +24,14 @@ func (s *server) handleGenerateBill(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	table, err := s.tableService.FindTable(r.Context(), req.TableID)
+	table, err := s.TableService.FindTable(r.Context(), req.TableID)
 	if err != nil {
 		s.logger.Errorf("error finding table: %s\n", err)
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	bill, err := s.billService.GenerateBill(r.Context(), table)
+	bill, err := s.BillService.GenerateBill(r.Context(), table)
 	if err != nil {
 		s.logger.Errorf("error generating bill: %s\n", err)
 		w.WriteHeader(http.StatusInternalServerError)

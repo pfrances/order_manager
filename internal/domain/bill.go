@@ -13,6 +13,10 @@ const (
 	BillStatusPaid    BillStatus = "paid"
 )
 
+func (s BillStatus) IsValid() bool {
+	return s == BillStatusPending || s == BillPartiallyPaid || s == BillStatusPaid
+}
+
 type Bill struct {
 	ID          id.ID
 	TableID     id.ID
@@ -20,6 +24,18 @@ type Bill struct {
 	Status      BillStatus
 	TotalAmount int
 	Paid        int
+}
+
+func (b Bill) IsValid() bool {
+	isValid := b.ID != id.NilID() && b.TableID != id.NilID() && b.Items != nil && b.Status.IsValid() && b.TotalAmount >= 0 && b.Paid >= 0
+
+	for _, item := range b.Items {
+		if !item.IsValid() {
+			return false
+		}
+	}
+
+	return isValid
 }
 
 type BillRepository interface {
@@ -44,6 +60,7 @@ func (s *BillService) GenerateBill(ctx context.Context, table Table) (Bill, erro
 		ID:      id.New(),
 		TableID: table.ID,
 		Status:  BillStatusPending,
+		Items:   make([]MenuItem, 0),
 	}
 
 	for _, order := range table.Orders {

@@ -23,6 +23,10 @@ func (b *Bill) Save(ctx context.Context, bill domain.Bill) error {
 		return ctx.Err()
 	}
 
+	if !bill.IsValid() {
+		return domain.Errorf(domain.EINVALID, "bill is invalid: %v", bill)
+	}
+
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
