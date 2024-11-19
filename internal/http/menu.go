@@ -3,7 +3,6 @@ package http
 import (
 	"encoding/json"
 	"net/http"
-	"order_manager/internal/domain"
 )
 
 func (s *Server) registerMenuRoutes(r *router) {
@@ -26,15 +25,22 @@ func (s *Server) HandleAddMenuItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.Name == "" {
+		s.logger.Errorf("empty name\n")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if req.Price < 0 {
+		s.logger.Errorf("negative price\n")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	item, err := s.MenuService.CreateMenuItem(r.Context(), req.Name, req.Price)
 	if err != nil {
-		if domain.ErrorCode(err) == domain.EINVALID {
-			s.logger.Errorf("error creating menu item: %s\n", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
 		s.logger.Errorf("error creating menu item: %s\n", err)
-		w.WriteHeader(http.StatusInternalServerError)
+		writeError(w, domainErrorToHTTPStatus(err), err)
 		return
 	}
 
@@ -45,7 +51,7 @@ func (s *Server) HandleGetMenuItems(w http.ResponseWriter, r *http.Request) {
 	items, err := s.MenuService.FindAllMenuItems(r.Context())
 	if err != nil {
 		s.logger.Errorf("error finding menu items: %s\n", err)
-		w.WriteHeader(http.StatusInternalServerError)
+		writeError(w, domainErrorToHTTPStatus(err), err)
 		return
 	}
 
