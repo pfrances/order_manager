@@ -25,6 +25,10 @@ func (m *Menu) SaveItem(ctx context.Context, item domain.MenuItem) error {
 		return ctx.Err()
 	}
 
+	if !item.IsValid() {
+		return domain.Errorf(domain.EINVALID, "menu item is invalid: %v", item)
+	}
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -66,9 +70,28 @@ func (m *Menu) FindItems(ctx context.Context, ids []id.ID) ([]domain.MenuItem, e
 	return items, nil
 }
 
+func (m *Menu) FindAllItems(ctx context.Context) ([]domain.MenuItem, error) {
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	items := make([]domain.MenuItem, 0, len(m.items))
+	for _, item := range m.items {
+		items = append(items, item)
+	}
+	return items, nil
+}
+
 func (m *Menu) SaveCategory(ctx context.Context, category domain.MenuCategory) error {
 	if ctx.Err() != nil {
 		return ctx.Err()
+	}
+
+	if !category.IsValid() {
+		return domain.Errorf(domain.EINVALID, "menu category is invalid: %v", category)
 	}
 
 	m.mu.Lock()

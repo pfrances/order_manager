@@ -15,14 +15,26 @@ type dbMenuItem struct {
 	price int    `db:"price"`
 }
 
+func (i dbMenuItem) IsValid() bool {
+	return i.id != id.NilID() && i.name != "" && i.price >= 0
+}
+
 type dbMenuItemCategory struct {
 	id   id.ID  `db:"id"`
 	name string `db:"name"`
 }
 
+func (c dbMenuItemCategory) IsValid() bool {
+	return c.id != id.NilID() && c.name != ""
+}
+
 type dbMenuItemCategoryItem struct {
 	categoryID id.ID `db:"category_id"`
 	itemID     id.ID `db:"item_id"`
+}
+
+func (i dbMenuItemCategoryItem) IsValid() bool {
+	return i.categoryID != id.NilID() && i.itemID != id.NilID()
 }
 
 type Menu struct {
@@ -34,6 +46,10 @@ func NewMenu(db *DB) *Menu {
 }
 
 func (m *Menu) SaveItem(ctx context.Context, item domain.MenuItem) error {
+	if !item.IsValid() {
+		return domain.Errorf(domain.EINVALID, "menu item is invalid: %v", item)
+	}
+
 	_, err := m.ExecContext(ctx, `
 		INSERT INTO menu_items (id, name, price)
 		VALUES (?, ?, ?)
@@ -46,6 +62,16 @@ func (m *Menu) SaveItem(ctx context.Context, item domain.MenuItem) error {
 }
 
 func (m *Menu) SaveItems(ctx context.Context, items []domain.MenuItem) error {
+	if len(items) == 0 {
+		return nil
+	}
+
+	for _, item := range items {
+		if !item.IsValid() {
+			return domain.Errorf(domain.EINVALID, "menu item is invalid: %v", item)
+		}
+	}
+
 	tx, err := m.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
@@ -123,10 +149,44 @@ func (m *Menu) FindItems(ctx context.Context, ids []id.ID) ([]domain.MenuItem, e
 		})
 	}
 
+	if len(items) != len(ids) {
+		return nil, domain.Errorf(domain.ENOTFOUND, "failed to find all items")
+	}
+
+	return items, nil
+}
+
+func (m *Menu) FindAllItems(ctx context.Context) ([]domain.MenuItem, error) {
+	rows, err := m.QueryContext(ctx, `
+		SELECT id, name, price
+		FROM menu_items
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query items: %w", err)
+	}
+
+	items := make([]domain.MenuItem, 0)
+	for rows.Next() {
+		var item dbMenuItem
+		if err := rows.Scan(&item.id, &item.name, &item.price); err != nil {
+			return nil, fmt.Errorf("failed to scan item: %w", err)
+		}
+
+		items = append(items, domain.MenuItem{
+			ID:    item.id,
+			Name:  item.name,
+			Price: item.price,
+		})
+	}
+
 	return items, nil
 }
 
 func (m *Menu) SaveCategory(ctx context.Context, category domain.MenuCategory) error {
+	if !category.IsValid() {
+		return domain.Errorf(domain.EINVALID, "menu category is invalid: %v", category)
+	}
+
 	tx, err := m.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
@@ -154,7 +214,6 @@ func (m *Menu) SaveCategory(ctx context.Context, category domain.MenuCategory) e
 		args = append(args, category.ID, item.ID)
 	}
 
-	fmt.Println(menuItemCategoryQuery, args)
 	_, err = tx.ExecContext(ctx, menuItemCategoryQuery, args...)
 	if err != nil {
 		return fmt.Errorf("failed to insert menu item categories: %w", err)
@@ -222,6 +281,12 @@ func (m *Menu) FindCategory(ctx context.Context, id id.ID) (domain.MenuCategory,
 func (m *Menu) insertItems(context context.Context, tx *sql.Tx, items []dbMenuItem) error {
 	if len(items) == 0 {
 		return nil
+	}
+
+	for _, i := range items {
+		if !i.IsValid() {
+			return domain.Errorf(domain.EINVALID, "menu item is invalid: %v", i)
+		}
 	}
 
 	itemQuery := fmt.Sprintf(`

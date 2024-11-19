@@ -17,12 +17,20 @@ const (
 	dbBillStatusPaid   dbBillStatus = "paid"
 )
 
+func (s dbBillStatus) IsValid() bool {
+	return s == dbBillStatusOpen || s == dbBillStatusClosed || s == dbBillStatusPaid
+}
+
 type dbBill struct {
 	id      id.ID        `db:"id"`
 	tableID id.ID        `db:"table_id"`
 	total   int          `db:"total"`
 	paid    int          `db:"paid"`
 	status  dbBillStatus `db:"status"`
+}
+
+func (b dbBill) IsValid() bool {
+	return b.id != id.NilID() && b.tableID != id.NilID() && b.total >= 0 && b.paid >= 0 && b.status.IsValid()
 }
 
 type Bill struct {
@@ -34,6 +42,10 @@ func NewBill(db *DB) *Bill {
 }
 
 func (b *Bill) Save(ctx context.Context, bill domain.Bill) error {
+	if !bill.IsValid() {
+		return domain.Errorf(domain.EINVALID, "bill is invalid: %v", bill)
+	}
+
 	tx, err := b.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)

@@ -12,10 +12,30 @@ const (
 	TableStatusClosed TableStatus = "closed"
 )
 
+func (s TableStatus) IsValid() bool {
+	return s == TableStatusOpened || s == TableStatusClosed
+}
+
 type Table struct {
 	ID     id.ID
 	Orders []Order
 	Status TableStatus
+}
+
+func (t *Table) IsValid() bool {
+	isValid := t.ID != id.NilID() && t.Status.IsValid() && t.Orders != nil
+
+	for _, order := range t.Orders {
+		if !order.IsValid() {
+			return false
+		}
+
+		if t.Status == TableStatusClosed && order.Status == OrderStatusTaken {
+			return false
+		}
+	}
+
+	return isValid
 }
 
 type OrderStatus string
@@ -26,10 +46,34 @@ var (
 	OrderStatusAborted OrderStatus = "aborted"
 )
 
+func (s OrderStatus) IsValid() bool {
+	return s == OrderStatusTaken || s == OrderStatusDone || s == OrderStatusAborted
+}
+
 type Order struct {
 	ID           id.ID
 	Status       OrderStatus
 	Preparations []Preparation
+}
+
+func (o *Order) IsValid() bool {
+	isValid := o.ID != id.NilID() && o.Status.IsValid() && o.Preparations != nil && len(o.Preparations) > 0
+
+	for _, prep := range o.Preparations {
+		if !prep.IsValid() {
+			return false
+		}
+
+		if o.Status == OrderStatusDone && prep.Status != PreparationStatusServed {
+			return false
+		}
+
+		if o.Status == OrderStatusAborted && prep.Status != PreparationStatusAborted {
+			return false
+		}
+	}
+
+	return isValid
 }
 
 type PreparationStatus string
@@ -42,15 +86,28 @@ const (
 	PreparationStatusAborted    PreparationStatus = "aborted"
 )
 
+func (s PreparationStatus) IsValid() bool {
+	return s == PreparationStatusPending ||
+		s == PreparationStatusInProgress ||
+		s == PreparationStatusReady ||
+		s == PreparationStatusServed ||
+		s == PreparationStatusAborted
+}
+
 type Preparation struct {
 	ID       id.ID
 	MenuItem MenuItem
 	Status   PreparationStatus
 }
 
+func (p *Preparation) IsValid() bool {
+	return p.ID != id.NilID() && p.Status.IsValid() && p.MenuItem.IsValid()
+}
+
 type TableRepository interface {
 	Save(ctx context.Context, table Table) error
 	FindByID(ctx context.Context, id id.ID) (Table, error)
+	FindByPreparationID(ctx context.Context, preparationID id.ID) (Table, error)
 	FindByStatus(ctx context.Context, status TableStatus) ([]Table, error)
 }
 
@@ -183,24 +240,19 @@ func (s *TableService) TakeOrder(ctx context.Context, tableID id.ID, menuItems [
 // - EINVALID if the table is not open.
 // - EINVALID if the preparation is not pending.
 // - Any error returned by the repository when saving the table.
-func (s *TableService) StartPreparation(ctx context.Context, tableID, orderID, preparationID id.ID) error {
-	table, err := s.repo.FindByID(ctx, tableID)
+func (s *TableService) StartPreparation(ctx context.Context, preparationID id.ID) error {
+	table, err := s.repo.FindByPreparationID(ctx, preparationID)
 	if err != nil {
 		return err
 	}
 
 	if table.Status != TableStatusOpened {
-		return Errorf(EINVALID, "table %s is not open", tableID)
+		return Errorf(EINVALID, "table %s is not open", table.ID)
 	}
 
-	order, err := table.findOrder(orderID)
+	prep, order, err := table.ExtractPreparationWithOrder(preparationID)
 	if err != nil {
 		return err
-	}
-
-	prep, err := order.findPreparation(preparationID)
-	if err != nil {
-		return Errorf(ENOTFOUND, "preparation %s not found in order %s", preparationID, orderID)
 	}
 
 	if prep.Status != PreparationStatusPending {
@@ -227,22 +279,17 @@ func (s *TableService) StartPreparation(ctx context.Context, tableID, orderID, p
 // - EINVALID if the table is not open.
 // - EINVALID if the preparation is not in progress.
 // - Any error returned by the repository when saving the table.
-func (s *TableService) FinishPreparation(ctx context.Context, tableID, orderID, preparationID id.ID) error {
-	table, err := s.repo.FindByID(ctx, tableID)
+func (s *TableService) FinishPreparation(ctx context.Context, preparationID id.ID) error {
+	table, err := s.repo.FindByPreparationID(ctx, preparationID)
 	if err != nil {
 		return err
 	}
 
 	if table.Status != TableStatusOpened {
-		return Errorf(EINVALID, "table %s is not open", tableID)
+		return Errorf(EINVALID, "table %s is not open", table.ID)
 	}
 
-	order, err := table.findOrder(orderID)
-	if err != nil {
-		return err
-	}
-
-	prep, err := order.findPreparation(preparationID)
+	prep, order, err := table.ExtractPreparationWithOrder(preparationID)
 	if err != nil {
 		return err
 	}
@@ -271,28 +318,23 @@ func (s *TableService) FinishPreparation(ctx context.Context, tableID, orderID, 
 // - EINVALID if the table is not open.
 // - EINVALID if the preparation is not ready.
 // - Any error returned by the repository when saving the table.
-func (s *TableService) ServePreparation(ctx context.Context, tableID id.ID, orderID id.ID, prepID id.ID) error {
-	table, err := s.repo.FindByID(ctx, tableID)
+func (s *TableService) ServePreparation(ctx context.Context, preparationID id.ID) error {
+	table, err := s.repo.FindByPreparationID(ctx, preparationID)
 	if err != nil {
 		return err
 	}
 
 	if table.Status != TableStatusOpened {
-		return Errorf(EINVALID, "table %s is not open", tableID)
+		return Errorf(EINVALID, "table %s is not open", table.ID)
 	}
 
-	order, err := table.findOrder(orderID)
-	if err != nil {
-		return err
-	}
-
-	prep, err := order.findPreparation(prepID)
+	prep, order, err := table.ExtractPreparationWithOrder(preparationID)
 	if err != nil {
 		return err
 	}
 
 	if prep.Status != PreparationStatusReady {
-		return Errorf(EINVALID, "preparation %s is not ready, preparation status is %s", prepID, prep.Status)
+		return Errorf(EINVALID, "preparation %s is not ready, preparation status is %s", preparationID, prep.Status)
 	}
 
 	prep.Status = PreparationStatusServed
@@ -320,13 +362,15 @@ func (s *TableService) ServePreparation(ctx context.Context, tableID id.ID, orde
 	return nil
 }
 
-func (t *Table) findOrder(id id.ID) (Order, error) {
+func (t *Table) ExtractPreparationWithOrder(preparationID id.ID) (Preparation, Order, error) {
 	for _, order := range t.Orders {
-		if order.ID == id {
-			return order, nil
+		for _, prep := range order.Preparations {
+			if prep.ID == preparationID {
+				return prep, order, nil
+			}
 		}
 	}
-	return Order{}, Errorf(ENOTFOUND, "order with id %s not found", id)
+	return Preparation{}, Order{}, Errorf(ENOTFOUND, "preparation with id %s not found", preparationID)
 }
 
 func (t *Table) updateOrder(order Order) {
@@ -336,15 +380,6 @@ func (t *Table) updateOrder(order Order) {
 			return
 		}
 	}
-}
-
-func (o *Order) findPreparation(id id.ID) (Preparation, error) {
-	for _, prep := range o.Preparations {
-		if prep.ID == id {
-			return prep, nil
-		}
-	}
-	return Preparation{}, Errorf(ENOTFOUND, "preparation with id %s not found", id)
 }
 
 func (o *Order) updatePreparation(prep Preparation) {

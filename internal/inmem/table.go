@@ -23,6 +23,10 @@ func (t *Table) Save(ctx context.Context, table domain.Table) error {
 		return ctx.Err()
 	}
 
+	if !table.IsValid() {
+		return domain.Errorf(domain.EINVALID, "table is invalid: %v", table)
+	}
+
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
@@ -43,6 +47,27 @@ func (t *Table) FindByID(ctx context.Context, id id.ID) (domain.Table, error) {
 		return domain.Table{}, domain.Errorf(domain.ENOTFOUND, "table with id %s not found", id)
 	}
 	return table, nil
+}
+
+func (t *Table) FindByPreparationID(ctx context.Context, preparationID id.ID) (domain.Table, error) {
+	if ctx.Err() != nil {
+		return domain.Table{}, ctx.Err()
+	}
+
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	for _, table := range t.tables {
+		for _, order := range table.Orders {
+			for _, preparation := range order.Preparations {
+				if preparation.ID == preparationID {
+					return table, nil
+				}
+			}
+		}
+	}
+
+	return domain.Table{}, domain.Errorf(domain.ENOTFOUND, "table with preparation id %s not found", preparationID)
 }
 
 func (t *Table) FindByStatus(ctx context.Context, status domain.TableStatus) ([]domain.Table, error) {

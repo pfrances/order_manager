@@ -16,9 +16,17 @@ const (
 	dbTableStatusClosed dbTableStatus = "closed"
 )
 
+func (s dbTableStatus) IsValid() bool {
+	return s == dbTableStatusOpened || s == dbTableStatusClosed
+}
+
 type dbTable struct {
 	id     id.ID         `db:"id"`
 	status dbTableStatus `db:"status"`
+}
+
+func (t dbTable) IsValid() bool {
+	return t.id != id.NilID() && t.status.IsValid()
 }
 
 type dbOrderStatus string
@@ -29,10 +37,18 @@ const (
 	dbOrderStatusAborted dbOrderStatus = "aborted"
 )
 
+func (s dbOrderStatus) IsValid() bool {
+	return s == dbOrderStatusTaken || s == dbOrderStatusDone || s == dbOrderStatusAborted
+}
+
 type dbOrder struct {
 	id      id.ID         `db:"id"`
 	tableID id.ID         `db:"table_id"`
 	status  dbOrderStatus `db:"status"`
+}
+
+func (o dbOrder) IsValid() bool {
+	return o.id != id.NilID() && o.tableID != id.NilID() && o.status.IsValid()
 }
 
 type dbPreparationStatus string
@@ -45,11 +61,23 @@ const (
 	dbPreparationStatusAborted    dbPreparationStatus = "aborted"
 )
 
+func (s dbPreparationStatus) IsValid() bool {
+	return s == dbPreparationStatusPending ||
+		s == dbPreparationStatusInProgress ||
+		s == dbPreparationStatusReady ||
+		s == dbPreparationStatusServed ||
+		s == dbPreparationStatusAborted
+}
+
 type dbPreparation struct {
 	id         id.ID               `db:"id"`
 	orderID    id.ID               `db:"order_id"`
 	menuItemID id.ID               `db:"menu_item_id"`
 	status     dbPreparationStatus `db:"status"`
+}
+
+func (p dbPreparation) IsValid() bool {
+	return p.id != id.NilID() && p.orderID != id.NilID() && p.menuItemID != id.NilID() && p.status.IsValid()
 }
 
 type Table struct {
@@ -61,6 +89,10 @@ func NewTable(db *DB) *Table {
 }
 
 func (t *Table) Save(ctx context.Context, table domain.Table) error {
+	if !table.IsValid() {
+		return domain.Errorf(domain.EINVALID, "table is invalid: %v", table)
+	}
+
 	tx, err := t.Begin()
 	if err != nil {
 		return err
@@ -74,17 +106,17 @@ func (t *Table) Save(ctx context.Context, table domain.Table) error {
 
 	err = t.insertTable(ctx, tx, dbTable)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to insert table: %w", err)
 	}
 
 	err = t.insertOrder(ctx, tx, dbOrders)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to insert orders: %w", err)
 	}
 
-	err = t.insertPreparation(ctx, tx, dbPreparations)
+	err = t.insertPreparations(ctx, tx, dbPreparations)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to insert preparations: %w", err)
 	}
 
 	return tx.Commit()
@@ -165,6 +197,27 @@ func (t *Table) FindByID(ctx context.Context, id id.ID) (domain.Table, error) {
 	table := toDomainTable(dbTable, dbOrders, dbPreparations, dbItems)
 
 	return table, tx.Commit()
+}
+
+func (t *Table) FindByPreparationID(ctx context.Context, preparationID id.ID) (domain.Table, error) {
+	var tableID id.ID
+	err := t.QueryRowContext(ctx, `
+		SELECT table_id
+		FROM orders
+		WHERE id = (
+			SELECT order_id
+			FROM preparations
+			WHERE id = ?
+		)
+		`, preparationID).Scan(&tableID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return domain.Table{}, domain.Errorf(domain.ENOTFOUND, "table with preparation id %d not found", preparationID)
+		}
+		return domain.Table{}, fmt.Errorf("failed to find table: %w", err)
+	}
+
+	return t.FindByID(ctx, tableID)
 }
 
 func (t *Table) FindByStatus(ctx context.Context, status domain.TableStatus) ([]domain.Table, error) {
@@ -251,9 +304,14 @@ func (t *Table) FindByStatus(ctx context.Context, status domain.TableStatus) ([]
 }
 
 func (t *Table) insertTable(ctx context.Context, tx *sql.Tx, table dbTable) error {
+	if !table.IsValid() {
+		return domain.Errorf(domain.EINVALID, "table is invalid: %v", table)
+	}
+
 	_, err := tx.ExecContext(ctx, `
 		INSERT INTO tables (id, status)
 		VALUES (?, ?)
+			ON CONFLICT (id) DO UPDATE SET status = excluded.status
 		`, table.id, table.status)
 	if err != nil {
 		return fmt.Errorf("failed to insert table: %w", err)
@@ -267,9 +325,16 @@ func (t *Table) insertOrder(ctx context.Context, tx *sql.Tx, order []dbOrder) er
 		return nil
 	}
 
+	for _, o := range order {
+		if !o.IsValid() {
+			return domain.Errorf(domain.EINVALID, "order is invalid: %v", o)
+		}
+	}
+
 	orderQuery := fmt.Sprintf(`
 			INSERT INTO orders (id, table_id, status)
 			VALUES %s
+				ON CONFLICT (id) DO UPDATE SET status = excluded.status
 			`, strings.Repeat(", (?, ?, ?)", len(order))[2:])
 	args := make([]interface{}, 0, len(order)*3)
 	for _, o := range order {
@@ -284,17 +349,24 @@ func (t *Table) insertOrder(ctx context.Context, tx *sql.Tx, order []dbOrder) er
 	return nil
 }
 
-func (t *Table) insertPreparation(ctx context.Context, tx *sql.Tx, preparation []dbPreparation) error {
-	if len(preparation) == 0 {
+func (t *Table) insertPreparations(ctx context.Context, tx *sql.Tx, preparations []dbPreparation) error {
+	if len(preparations) == 0 {
 		return nil
+	}
+
+	for _, p := range preparations {
+		if !p.IsValid() {
+			return domain.Errorf(domain.EINVALID, "preparation is invalid: %v", p)
+		}
 	}
 
 	preparationQuery := fmt.Sprintf(`
 		INSERT INTO preparations (id, order_id, menu_item_id, status)
 		VALUES %s
-		`, strings.Repeat(", (?, ?, ?, ?)", len(preparation))[2:])
-	args := make([]interface{}, 0, len(preparation)*4)
-	for _, p := range preparation {
+			ON CONFLICT (id) DO UPDATE SET status = excluded.status
+		`, strings.Repeat(", (?, ?, ?, ?)", len(preparations))[2:])
+	args := make([]interface{}, 0, len(preparations)*4)
+	for _, p := range preparations {
 		args = append(args, p.id, p.orderID, p.menuItemID, p.status)
 	}
 

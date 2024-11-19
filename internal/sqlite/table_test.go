@@ -27,18 +27,13 @@ func MustPresaveItemsFromTable(t *testing.T, db *sqlite.DB, table domain.Table) 
 }
 
 func GenerateDummyTable(status domain.TableStatus) domain.Table {
-	menuItem1 := domain.MenuItem{ID: id.New(), Name: "item1", Price: 100}
-	menuItem2 := domain.MenuItem{ID: id.New(), Name: "item2", Price: 200}
-	menuItem3 := domain.MenuItem{ID: id.New(), Name: "item3", Price: 300}
-	preparation1 := domain.Preparation{ID: id.New(), MenuItem: menuItem1, Status: domain.PreparationStatusPending}
-	preparation2 := domain.Preparation{ID: id.New(), MenuItem: menuItem2, Status: domain.PreparationStatusReady}
-	preparation3 := domain.Preparation{ID: id.New(), MenuItem: menuItem3, Status: domain.PreparationStatusServed}
-	order1 := domain.Order{ID: id.New(), Status: domain.OrderStatusDone, Preparations: []domain.Preparation{preparation1, preparation2}}
-	order2 := domain.Order{ID: id.New(), Status: domain.OrderStatusTaken, Preparations: []domain.Preparation{preparation3}}
+	menuItem := domain.MenuItem{ID: id.New(), Name: "item", Price: 100}
+	preparation := domain.Preparation{ID: id.New(), MenuItem: menuItem, Status: domain.PreparationStatusServed}
+	order := domain.Order{ID: id.New(), Status: domain.OrderStatusDone, Preparations: []domain.Preparation{preparation}}
 	table := domain.Table{
 		ID:     id.New(),
 		Status: status,
-		Orders: []domain.Order{order1, order2},
+		Orders: []domain.Order{order},
 	}
 
 	return table

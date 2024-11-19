@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"context"
 	"errors"
 	"fmt"
 )
@@ -9,6 +10,7 @@ var (
 	EUNKNOWN  = "EUNKNOWN"
 	ENOTFOUND = "ENOTFOUND"
 	EINVALID  = "EINVALID"
+	ECANCELED = "ECANCELED"
 )
 
 type Error struct {
@@ -21,11 +23,17 @@ func (e *Error) Error() string {
 }
 
 func ErrorCode(err error) string {
-	var e *Error
 	if err == nil {
 		return ""
-	} else if errors.As(err, &e) {
+	}
+
+	var e *Error
+	if errors.As(err, &e) {
 		return e.code
+	}
+
+	if errors.Is(err, context.Canceled) {
+		return ECANCELED
 	}
 	return EUNKNOWN
 }

@@ -9,8 +9,9 @@ import (
 	"order_manager/internal/domain"
 	"order_manager/internal/id"
 	"strings"
-	"sync"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 )
 
 type logger interface {
@@ -23,13 +24,14 @@ type tableService interface {
 	FindOpenedTables(ctx context.Context) ([]domain.Table, error)
 	OpenTable(ctx context.Context) (domain.Table, error)
 	CloseTable(ctx context.Context, tableID id.ID) error
-	FinishPreparation(ctx context.Context, tableID id.ID, orderID id.ID, preparationID id.ID) error
-	ServePreparation(ctx context.Context, tableID id.ID, orderID id.ID, prepID id.ID) error
-	StartPreparation(ctx context.Context, tableID id.ID, orderID id.ID, preparationID id.ID) error
+	FinishPreparation(ctx context.Context, preparationID id.ID) error
+	ServePreparation(ctx context.Context, preparationID id.ID) error
+	StartPreparation(ctx context.Context, preparationID id.ID) error
 	TakeOrder(ctx context.Context, tableID id.ID, menuItems []domain.MenuItem) (domain.Order, error)
 }
 
 type menuService interface {
+	FindAllMenuItems(ctx context.Context) ([]domain.MenuItem, error)
 	FindMenuItems(ctx context.Context, ids []id.ID) ([]domain.MenuItem, error)
 	AddItemToCategory(ctx context.Context, categoryID id.ID, itemID id.ID) error
 	CreateCategory(ctx context.Context, name string) (domain.MenuCategory, error)
@@ -62,7 +64,6 @@ func (r *router) group(prefix string, groupMiddleware ...middleware) *router {
 }
 
 func (r *router) HandleFunc(pattern string, handler http.HandlerFunc) {
-	// Split the pattern into method and path
 	parts := strings.SplitN(pattern, " ", 2)
 	if len(parts) != 2 {
 		log.Fatalf("invalid pattern: %s\n", pattern)
@@ -81,23 +82,25 @@ func (r *router) HandleFunc(pattern string, handler http.HandlerFunc) {
 	r.ServeMux.Handle(fullPattern, finalHandler)
 }
 
-type server struct {
+type Server struct {
 	server *http.Server
 	router *router
 
 	logger logger
 
-	tableService tableService
-	menuService  menuService
-	billService  billService
+	TableService tableService
+	MenuService  menuService
+	BillService  billService
+
+	URL string
 }
 
-func NewServer(logger logger, tableService tableService, menuService menuService, billService billService) *server {
-	s := &server{
+func NewServer(logger logger, tableService tableService, menuService menuService, billService billService) *Server {
+	s := &Server{
 		logger:       logger,
-		tableService: tableService,
-		menuService:  menuService,
-		billService:  billService,
+		TableService: tableService,
+		MenuService:  menuService,
+		BillService:  billService,
 	}
 	router := newRouter().group("/api", s.logMiddleware)
 	s.registerTableRoutes(router)
@@ -112,34 +115,31 @@ func NewServer(logger logger, tableService tableService, menuService menuService
 	s.server = server
 	s.router = router
 
+	s.URL = fmt.Sprintf("http://localhost%s", server.Addr)
+
 	return s
 }
 
-func (s *server) Run(ctx context.Context) error {
-	go func() {
+func (s *Server) Run(ctx context.Context) error {
+	g, gCtx := errgroup.WithContext(ctx)
+
+	g.Go(func() error {
 		s.logger.Infof("listening on %s\n", s.server.Addr)
-		if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			s.logger.Errorf("error listening and serving: %s\n", err)
+
+		err := s.server.ListenAndServe()
+		if err != http.ErrServerClosed {
+			return err
 		}
-	}()
 
-	var wg sync.WaitGroup
-	wg.Add(1)
+		return nil
+	})
 
-	go func() {
-		defer wg.Done()
-		<-ctx.Done()
-		shutdownCtx := context.Background()
-		shutdownCtx, cancel := context.WithTimeout(shutdownCtx, 10*time.Second)
-		defer cancel()
-		if err := s.server.Shutdown(shutdownCtx); err != nil {
-			s.logger.Errorf("error shutting down http server: %s\n", err)
-		}
-	}()
+	g.Go(func() error {
+		<-gCtx.Done()
+		return s.server.Shutdown(gCtx)
+	})
 
-	wg.Wait()
-
-	return nil
+	return g.Wait()
 }
 
 func writeJSONBody(w http.ResponseWriter, status int, body interface{}) {
@@ -149,6 +149,17 @@ func writeJSONBody(w http.ResponseWriter, status int, body interface{}) {
 	if err := json.NewEncoder(w).Encode(body); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(fmt.Sprintf(`{"error": "%s"}`, err)))
+	}
+}
+
+func domainErrorToHTTPStatus(err error) int {
+	switch domain.ErrorCode(err) {
+	case domain.ENOTFOUND:
+		return http.StatusNotFound
+	case domain.EINVALID:
+		return http.StatusBadRequest
+	default:
+		return http.StatusInternalServerError
 	}
 }
 
@@ -169,7 +180,7 @@ func (w *logResponseWriter) WriteHeader(status int) {
 	w.ResponseWriter.WriteHeader(status)
 }
 
-func (s *server) logMiddleware(next http.Handler) http.Handler {
+func (s *Server) logMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
