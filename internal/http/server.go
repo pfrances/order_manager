@@ -157,7 +157,7 @@ func domainErrorToHTTPStatus(err error) int {
 	case domain.ENOTFOUND:
 		return http.StatusNotFound
 	case domain.EINVALID:
-		return http.StatusBadRequest
+		return http.StatusForbidden
 	default:
 		return http.StatusInternalServerError
 	}

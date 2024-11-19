@@ -209,7 +209,7 @@ func TestCloseTableHandler(t *testing.T) {
 					Status: domain.TableStatusClosed,
 					Orders: []domain.Order{},
 				},
-				expectedStatusCode: http.StatusBadRequest,
+				expectedStatusCode: http.StatusForbidden,
 			},
 		}
 
@@ -371,7 +371,7 @@ func TestTakeOrder(t *testing.T) {
 
 			res := w.Result()
 
-			require.Equal(t, http.StatusBadRequest, res.StatusCode)
+			require.Equal(t, http.StatusForbidden, res.StatusCode)
 		})
 
 		t.Run("table not found", func(t *testing.T) {
@@ -506,7 +506,7 @@ func TestStartPreparation(t *testing.T) {
 					MenuItem: domain.MenuItem{ID: id.New(), Name: "item", Price: 100},
 					Status:   domain.PreparationStatusInProgress,
 				},
-				expectedStatusCode: http.StatusBadRequest,
+				expectedStatusCode: http.StatusForbidden,
 			},
 		}
 
